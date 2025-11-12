@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://admin.riafco-io.org/sitemap.xml

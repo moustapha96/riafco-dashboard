@@ -1,17 +1,61 @@
-<!DOCTYPE html>
-<html lang="en" class="light scroll-smooth" dir="ltr">
-  <head>
-    <meta charset="UTF-8" />
-     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!doctype html>
+<html lang="fr" class="scroll-smooth" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+
+    <!-- SEO de base -->
     <title>RIAFCO | Réseau des Institutions Africaines de Financement des Collectivités locales</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" integrity="sha512-c42qTSw/wPZ3/5LBzD+Bw5f7bSF2oxou6wEb+I/lqeaKV5FDIfMvvRp772y4jcJLKuGUOpbJMdg/BTl50fJYAw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <meta name="description" content="RIAFCO fédère les institutions africaines de financement des collectivités locales et accompagne la décentralisation par l’investissement, l’expertise et la gouvernance." />
+    <link rel="canonical" href="https://riafco-oi.org/" />
+    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1" />
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" integrity="sha512-c42qTSw/wPZ3/5LBzD+Bw5f7bSF2oxou6wEb+I/lqeaKV5FDIfMvvRp772y4jcJLKuGUOpbJMdg/BTl50fJYAw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+    <!-- Open Graph / Twitter -->
+    <meta property="og:site_name" content="RIAFCO" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://riafco-oi.org/" />
+    <meta property="og:title" content="RIAFCO | Administration" />
+    <meta property="og:description" content="RIAFCO fédère les institutions africaines de financement des collectivités locales et accompagne la décentralisation par l’investissement, l’expertise et la gouvernance." />
+    <meta property="og:image" content="https://riafco-oi.org/logo.png" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RIAFCO | Administration" />
+    <meta name="twitter:description" content="RIAFCO fédère les institutions africaines de financement des collectivités locales et accompagne la décentralisation par l’investissement, l’expertise et la gouvernance." />
+    <meta name="twitter:image" content="https://riafco-oi.org/logo.png" />
+
+    <!-- PWA / icônes -->
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f172a" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Perf networking -->
+    <link rel="dns-prefetch" href="https://back.riafco-oi.org" />
+    <link rel="dns-prefetch" href="https://admin.riafco-oi.org" />
+    <link rel="preconnect" href="https://back.riafco-oi.org" crossorigin />
+    <link rel="preconnect" href="https://admin.riafco-oi.org" crossorigin />
+
+    <!-- Données structurées (Organization) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "RIAFCO",
+      "url": "https://riafco-oi.org/",
+      "logo": "https://riafco-oi.org/logo.png",
+      "sameAs": ["https://admin.riafco-oi.org/"],
+      "description": "RIAFCO fédère les institutions africaines de financement des collectivités locales et accompagne la décentralisation par l’investissement, l’expertise et la gouvernance."
+    }
+    </script>
   </head>
+
   <body class="font-nunito text-base text-slate-900 dark:text-white dark:bg-slate-900">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
