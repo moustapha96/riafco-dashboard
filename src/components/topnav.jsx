@@ -115,7 +115,6 @@ export default function Topnav({ setToggle, toggle }) {
                                     <div className="round-full">
                                         <Avatar
                                             size={50}
-
                                             src={buildImageUrl(user?.profilePic)}
                                             alt="riafco avatar"
                                             icon={<UserOutlined />}
