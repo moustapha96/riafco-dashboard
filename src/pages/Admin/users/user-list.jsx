@@ -7,6 +7,7 @@ import { UserOutlined, SearchOutlined } from "@ant-design/icons";
 import { PiPlusDuotone } from "react-icons/pi";
 import userService from "../../../services/userService";
 import { useAuth } from "../../../hooks/useAuth";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 
 const { Search } = Input;
@@ -159,7 +160,7 @@ const UserListAdmin = () => {
                     <Avatar
                         size="default"
                         icon={<UserOutlined />}
-                        src={record.profilePic}
+                        src={buildImageUrl(record.profilePic)}
                     />
                     <Link to={`/admin/users/${record.id}/details`}>
                         {record.firstName} {record.lastName}

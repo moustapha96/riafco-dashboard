@@ -20,6 +20,7 @@ import {
 import { UserOutlined, UploadOutlined, PlusCircleOutlined, SaveFilled, ArrowLeftOutlined } from "@ant-design/icons";
 import userService from "../../../services/userService";
 import { toast } from "sonner";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 const { Option } = Select;
 import { useAuth } from "@/hooks/useAuth";
@@ -78,7 +79,7 @@ const AdminUserEdit = () => {
 
 
             if (userData.profilePic) {
-                setImageUrl(userData.profilePic);
+                setImageUrl(buildImageUrl(userData.profilePic));
             } else {
                 setImageUrl(null); // ou une URL par défaut si vous en avez une
             }

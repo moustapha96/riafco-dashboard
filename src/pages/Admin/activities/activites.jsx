@@ -45,6 +45,7 @@ import { FaHandshakeAltSlash } from "react-icons/fa"
 import { MdAdd } from "react-icons/md"
 import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Paragraph, Text, Title } = Typography
 const { Option } = Select
@@ -493,9 +494,7 @@ const ActivitesManagement = () => {
                                                     item.image ? (
                                                         <img
                                                             alt={item.title_fr}
-                                                            // src={`/uploads${item? item.image : '/placeholder.svg'}` }
-                                                        
-                                                            src={item.image || "/placeholder.svg"}
+                                                            src={buildImageUrl(item.image) || "/placeholder.svg"}
                                                             style={{ height: 200, objectFit: "cover" }}
                                                         />
                                                     ) : (
@@ -571,7 +570,7 @@ const ActivitesManagement = () => {
                                                             </Paragraph>
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                                    <Avatar size="small" icon={<UserOutlined />} src={item.author?.profilePic} />
+                                                                    <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(item.author?.profilePic)} />
                                                                     <Text type="secondary" style={{ fontSize: "12px" }}>
                                                                         {item.author?.firstName} {item.author?.lastName}
                                                                     </Text>

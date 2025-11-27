@@ -15,6 +15,7 @@ import { useParams, useNavigate, Link } from "react-router-dom"
 import partnerService from "../../../services/partnerService"
 import moment from "moment"
 import { toast } from "sonner"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title, Text, Paragraph } = Typography
 
@@ -109,7 +110,7 @@ const PartnerDetails = () => {
                             <Col xs={24} md={8} style={{ textAlign: "center" }}>
                                 <Avatar
                                     size={120}
-                                    src={`${partner.logo}`}
+                                    src={buildImageUrl(partner.logo)}
                                     style={{
                                         backgroundColor: "#1e81b0",
                                         fontSize: "48px",

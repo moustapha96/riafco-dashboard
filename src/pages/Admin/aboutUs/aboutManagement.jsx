@@ -26,6 +26,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import dayjs from "dayjs";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 
 
@@ -201,7 +202,7 @@ const AboutManagement = () => {
                                     key: "image",
                                     render: (_, record) => (
                                         <Space size="middle">
-                                            <Avatar size="default" icon={<GlobalOutlined />} src={record.image} />
+                                            <Avatar size="default" icon={<GlobalOutlined />} src={buildImageUrl(record.image)} />
                                         </Space>
                                     ),
                                 },

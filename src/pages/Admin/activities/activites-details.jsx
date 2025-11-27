@@ -16,6 +16,7 @@ import MDEditor from "@uiw/react-md-editor"
 import activityService from "../../../services/activityService"
 import { FaHandshake } from "react-icons/fa"
 import { toast } from "sonner"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 
 const { Title, Text } = Typography
@@ -153,7 +154,7 @@ const ActivitesDetails = () => {
                             {activity.image && (
                                 <Card title="Image" style={{ marginBottom: "24px" }}>
                                     <img
-                                        src={activity.image || "/placeholder.svg"}
+                                        src={buildImageUrl(activity.image) || "/placeholder.svg"}
                                         alt={activity.title}
                                         style={{
                                             width: "100%",
@@ -183,7 +184,7 @@ const ActivitesDetails = () => {
                                         {activity.galleries.slice(0, 3).map((img, index) => (
                                             <Col key={index}>
                                                 <img
-                                                    src={img}
+                                                    src={buildImageUrl(img)}
                                                     alt={`Gallery ${index}`}
                                                     style={{ width: "150px", height: "150px", objectFit: "cover", borderRadius: "4px" }}
                                                 />
@@ -202,7 +203,7 @@ const ActivitesDetails = () => {
                                         <Text strong>Auteur</Text>
                                         <div style={{ marginTop: "8px" }}>
                                             <Space>
-                                                <Avatar size="small" icon={<UserOutlined />} src={activity.author?.profilePic} />
+                                                <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(activity.author?.profilePic)} />
                                                 <Text>
                                                     {activity.author?.firstName} {activity.author?.lastName}
                                                 </Text>

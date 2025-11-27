@@ -6,6 +6,7 @@ import { Card, Typography, Button, Avatar, Tag, Spin, message, Row, Col, Divider
 import { ArrowLeftOutlined, UserOutlined, CalendarOutlined, EditOutlined } from "@ant-design/icons"
 import moment from "moment"
 import newsService from "../../../services/newsService"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title, Paragraph, Text } = Typography
 
@@ -136,7 +137,7 @@ const NewsDetails = () => {
 
                                 <Space size="large" wrap>
                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <Avatar size="small" icon={<UserOutlined />} src={news.author?.profilePic} />
+                                        <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(news.author?.profilePic)} />
                                         <Text>
                                             {news.author?.firstName} {news.author?.lastName}
                                         </Text>
@@ -169,7 +170,7 @@ const NewsDetails = () => {
                             {news.image && (
                                 <Card style={{ marginBottom: "24px" }}>
                                     <img
-                                        src={news.image || "/placeholder.svg"}
+                                        src={buildImageUrl(news.image) || "/placeholder.svg"}
                                         alt={news.title_fr}
                                         style={{
                                             width: "100%",
@@ -203,7 +204,7 @@ const NewsDetails = () => {
                                         {news.galleries.slice(0, 3).map((img, index) => (
                                             <Col key={index}>
                                                 <img
-                                                    src={img}
+                                                    src={buildImageUrl(img)}
                                                     alt={`Gallery ${index}`}
                                                     style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
                                                 />
@@ -222,7 +223,7 @@ const NewsDetails = () => {
                                     <Avatar
                                         size={80}
                                         icon={<UserOutlined />}
-                                        src={news.author?.profilePic}
+                                        src={buildImageUrl(news.author?.profilePic)}
                                         style={{ marginBottom: "16px" }}
                                     />
                                     <Title level={4} style={{ marginBottom: "8px" }}>

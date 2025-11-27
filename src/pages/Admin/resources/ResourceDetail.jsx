@@ -13,15 +13,9 @@ import {
   FileOutlined,
 } from "@ant-design/icons";
 import resourceService from "../../../services/resourceService";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 const { Title, Paragraph, Text } = Typography;
-const API = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "";
-
-function publicUrl(path) {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path; // déjà absolu
-  return `${API}${path.startsWith("/") ? "" : "/"}${path}`;
-}
 
 export default function ResourceDetail() {
   const { id } = useParams();
@@ -62,7 +56,7 @@ export default function ResourceDetail() {
     );
   }
 
-  const fileUrl = publicUrl(res.url || res.fileName);
+  const fileUrl = buildImageUrl(res.url || res.fileName);
   const created = res.createdAt ? new Date(res.createdAt).toLocaleString("fr-FR") : "-";
   const sizeMB = res.fileSize ? (res.fileSize / (1024 * 1024)).toFixed(2) + " MB" : "-";
 

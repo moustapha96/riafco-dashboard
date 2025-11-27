@@ -46,6 +46,7 @@ import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
 
 import { useAuth } from "../../../hooks/useAuth"
+import { buildImageUrl } from "../../../utils/imageUtils"
 const { Title, Paragraph, Text } = Typography
 const { Option } = Select
 const { RangePicker } = DatePicker
@@ -484,7 +485,7 @@ const NewsManagement = () => {
                                                     item.image ? (
                                                         <img
                                                             alt={item.title_fr}
-                                                            src={item.image}
+                                                            src={buildImageUrl(item.image)}
                                                             style={{ height: 200, objectFit: "cover" }}
                                                         />
                                                     ) : (
@@ -579,7 +580,7 @@ const NewsManagement = () => {
                                                             </Paragraph>
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                                    <Avatar size="small" icon={<UserOutlined />} src={item.author?.profilePic} />
+                                                                    <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(item.author?.profilePic)} />
                                                                     <Text type="secondary" style={{ fontSize: "12px" }}>
                                                                         {item.author?.firstName} {item.author?.lastName}
                                                                     </Text>

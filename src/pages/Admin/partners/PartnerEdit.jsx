@@ -6,6 +6,7 @@ import { SaveOutlined, ArrowLeftOutlined, UploadOutlined } from "@ant-design/ico
 import { Link, useNavigate, useParams } from "react-router-dom"
 import partnerService from "../../../services/partnerService"
 import { toast } from "sonner"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title } = Typography
 const { TextArea } = Input
@@ -209,7 +210,7 @@ const PartnerEdit = () => {
                                         {isEditing && partner?.logo && (
                                             <div style={{ marginTop: "8px" }}>
                                                 <img
-                                                    src={partner.logo || "/placeholder.svg"}
+                                                    src={buildImageUrl(partner.logo) || "/placeholder.svg"}
                                                     alt="Logo actuel"
                                                     style={{ maxWidth: "100px", maxHeight: "100px" }}
                                                 />

@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb, Card, Descriptions, Avatar, Statistic, Row, Col, Divider, Tag, Space, Button } from "antd";
 import { UserOutlined, MailOutlined, PhoneOutlined, EditFilled } from "@ant-design/icons";
 import userService from "../../../services/userService";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 
 const AdminUserDetail = () => {
@@ -62,7 +63,7 @@ const AdminUserDetail = () => {
                 <Card>
                     <Descriptions title="Informations personnelles"   bordered>
                         <Descriptions.Item label="Nom complet" span={2}>
-                            <Avatar size="large" icon={<UserOutlined />} src={user.profilePic} />
+                            <Avatar size="large" icon={<UserOutlined />} src={buildImageUrl(user.profilePic)} />
                             <span className="ml-3">{user.firstName} {user.lastName}</span>
                         </Descriptions.Item>
                         <Descriptions.Item label="Email">
