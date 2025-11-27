@@ -493,7 +493,8 @@ const ActivitesManagement = () => {
                                                     item.image ? (
                                                         <img
                                                             alt={item.title_fr}
-                                                            src={`/uploads/activities/${item.image}` }
+                                                            src={`/uploads${item? item.image : '/placeholder.svg'}` }
+                                                        
                                                             style={{ height: 200, objectFit: "cover" }}
                                                         />
                                                     ) : (
