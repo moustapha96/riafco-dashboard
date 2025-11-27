@@ -95,7 +95,7 @@
 //                                 </form>
 //                             </div>
 //                             <div className="text-center">
-//                                     <p className="mb-0 text-slate-400">© {new Date().getFullYear()} RIAFCO. Développer par <i className="mdi mdi-heart text-red-600"></i> by <Link to="https://alhussein-khouma.vercel.app/" target="_blank" className="text-reset">ADM</Link>.</p>
+//                                     <p className="mb-0 text-slate-400">© {new Date().getFullYear()} RIAFCO. Réalisé avec par  <i className="mdi mdi-heart text-red-600"></i> by <Link to="https://alhussein-khouma.vercel.app/" target="_blank" className="text-reset">ADM</Link>.</p>
 //                             </div>
 //                         </div>
 //                     </div>
@@ -247,7 +247,7 @@ export default function AuthResetPassword() {
                             {/* Footer mini */}
                             <div className="text-center mt-6">
                                 <p className="mb-0 text-slate-400 text-sm">
-                                    © {new Date().getFullYear()} RIAFCO. Développer par{" "}
+                                    © {new Date().getFullYear()} RIAFCO. Réalisé avec par {" "}
                                     <i className="mdi mdi-heart text-red-600" /> by{" "}
                                     <Link
                                         to="https://alhussein-khouma.vercel.app/"
