@@ -21,7 +21,7 @@ import {
 import { EditOutlined, PlusOutlined, GlobalOutlined, EnvironmentOutlined } from "@ant-design/icons"
 import ifclService from "../../../services/ifclService"
 import { toast } from "sonner"
-
+import { buildImageUrl } from "../../../utils/imageUtils"
 const { TextArea } = Input
 
 const IFCLDetailsAdmin = () => {
@@ -139,7 +139,7 @@ const IFCLDetailsAdmin = () => {
                         <Card
                             title={
                                 <Space>
-                                    <Avatar size="large" icon={<GlobalOutlined />} src={memberCountry.flag} />
+                                    <Avatar size="large" icon={<GlobalOutlined />} src={buildImageUrl(memberCountry.flag)} />
                                     <div>
                                         <div className="text-lg font-semibold">{memberCountry.name_fr}</div>
                                         {memberCountry.name_en && (
