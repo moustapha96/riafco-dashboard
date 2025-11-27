@@ -160,7 +160,7 @@ export default function AuthActivateAccount() {
                                         target="_blank"
                                         className="text-[var(--riafco-blue)] hover:underline"
                                     >
-                                        ADM
+                                        ALHK
                                     </Link>
                                     .
                                 </p>
