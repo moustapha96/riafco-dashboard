@@ -134,78 +134,78 @@ export default defineConfig({
         open: true,
         proxy: {
             '/api': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''),
             },
             '/profiles': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
 
             '/activities': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/countries': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/events': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/gouvernance': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/history': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/news': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/partners': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/resources': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/settings': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/teams': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/flags': {
-                    target: 'https://back.riafco-oi.org/',
+                    target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/reports': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             },
             '/about-us': {
-                target: 'https://back.riafco-oi.org/',
+                target: 'https://back.riafco-oi.org',
                 changeOrigin: true,
                 secure: false,
             }
