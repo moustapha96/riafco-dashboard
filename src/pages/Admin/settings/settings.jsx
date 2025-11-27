@@ -30,6 +30,7 @@ import {
 
 import settingsService from "../../../services/settingsService"
 import { toast } from "sonner"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title, Text } = Typography
 const { TabPane } = Tabs
@@ -83,7 +84,7 @@ const SettingsPage = () => {
                                 uid: "-1",
                                 name: "logo",
                                 status: "done",
-                                url: data.logo,
+                                url: buildImageUrl(data.logo),
                             },
                         ]
                         : []
@@ -95,7 +96,7 @@ const SettingsPage = () => {
                                 uid: "-2",
                                 name: "favicon",
                                 status: "done",
-                                url: data.favicon,
+                                url: buildImageUrl(data.favicon),
                             },
                         ]
                         : []

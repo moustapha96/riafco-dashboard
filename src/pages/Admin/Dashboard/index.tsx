@@ -2,12 +2,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
-import Order from "../../../components/dashboard/order"
-import Chat from "../../../components/dashboard/chat"
-import TopProduct from "../../../components/dashboard/topProduct"
 import DataStates from "../../../components/dataStates"
-import Analytics from "../../../components/analytics"
-import { BiExport } from "react-icons/bi"
 import dashboardService from "../../../services/dashboardService"
 import { useAuth } from "../../../hooks/useAuth"
 import { toast } from "sonner"
