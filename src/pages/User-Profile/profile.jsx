@@ -38,7 +38,7 @@ import {
 import authService from "../../services/authService"
 import { toast } from "sonner"
 import { useAuth } from "../../hooks/useAuth"
-import { buildImageUrl } from "../../../../riafco-frontend/src/utils/imageUtils"
+import { buildImageUrl } from "../../utils/imageUtils"
 
 const { Title, Text } = Typography
 
