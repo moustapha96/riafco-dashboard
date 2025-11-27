@@ -158,7 +158,7 @@ const ThemeView = () => {
                     <h5 className="text-lg font-semibold">Thème : {theme.title}</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/themes">Thèmes</Link> },
                             { title: theme.title },
                         ]}

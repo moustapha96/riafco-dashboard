@@ -409,7 +409,7 @@
 //                     </h5>
 //                     <Breadcrumb
 //                         items={[
-//                             { title: <Link to="/">Dashboard</Link> },
+//                             { title: <Link to="/">Tableau de bord</Link> },
 //                             { title: "Gestion des Reources" },
 //                         ]}
 //                     />
@@ -1100,7 +1100,7 @@ const ResourcesManagement = () => {
           <div className="md:flex justify-between items-center mb-6">
             <h5 className="text-lg font-semibold">Gestion des Articles</h5>
             <Breadcrumb
-              items={[{ title: <Link to="/">Dashboard</Link> }, { title: "Gestion des Reources" }]}
+              items={[{ title: <Link to="/">Tableau de bord</Link> }, { title: "Gestion des Reources" }]}
             />
           </div>
 

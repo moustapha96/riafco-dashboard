@@ -169,7 +169,7 @@ export default function CalendarManagement() {
                     <h5 className="text-lg font-semibold">Calendrier des Événements</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/admin/events">Evenements</Link> },
                             { title: "Calendrier" },
                         ]}

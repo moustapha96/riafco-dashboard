@@ -103,7 +103,7 @@ const ThemeForm = () => {
                         </h5>
                         <Breadcrumb
                             items={[
-                                { title: <Link to="/">Dashboard</Link> },
+                                { title: <Link to="/">Tableau de bord</Link> },
                                 { title: <Link to="/themes">Themes</Link> },
                                 { title: <Link to="/discussions">Discussions</Link> },
                                 { title: "Modification du thème" },

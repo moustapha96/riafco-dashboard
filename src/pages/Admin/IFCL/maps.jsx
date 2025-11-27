@@ -148,7 +148,7 @@
 //                     <h5 className="text-lg font-semibold">Carte des Pays membres</h5>
 //                     <Breadcrumb
 //                         items={[
-//                             { title: <Link to="/">Dashboard</Link> },
+//                             { title: <Link to="/">Tableau de bord</Link> },
 //                             { title: <Link to="/admin/ifcl">Pays membres</Link> },
 //                             { title: "Carte" },
 //                         ]}
@@ -534,7 +534,7 @@ export default function MapsIfcl() {
                     <h5 className="text-lg font-semibold">Carte des Pays membres</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/admin/ifcl">Pays membres</Link> },
                             { title: "Carte" },
                         ]}

@@ -364,7 +364,7 @@ const NewsManagement = () => {
                         <Title level={4} style={{ margin: 0 }}>Gestion des Articles</Title>
                         <Breadcrumb
                             items={[
-                                { title: <Link to="/">Dashboard</Link> },
+                                { title: <Link to="/">Tableau de bord</Link> },
                                 { title: "Gestion des Articles" },
                             ]}
                         />

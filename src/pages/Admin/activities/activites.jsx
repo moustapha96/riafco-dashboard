@@ -374,7 +374,7 @@ const ActivitesManagement = () => {
                         <Title level={4} style={{ margin: 0 }}>Gestion des Activités</Title>
                         <Breadcrumb
                             items={[
-                                { title: <Link to="/">Dashboard</Link> },
+                                { title: <Link to="/">Tableau de bord</Link> },
                                 { title: "Gestion des Activités" },
                             ]}
                         />

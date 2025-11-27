@@ -115,7 +115,7 @@ const DiscussionForm = () => {
                     <h5 className="text-lg font-semibold">Commentaire de la discussion</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/discussions">Discussions</Link> },
                             { title: "Modification Discussions" },
                         ]}

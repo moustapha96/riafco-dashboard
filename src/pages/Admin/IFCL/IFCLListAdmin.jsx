@@ -177,7 +177,7 @@ const IFCLListAdmin = () => {
                     <h5 className="text-lg font-semibold">Gestion des Pays membres</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/admin/ifcl/maps">Cartes</Link> },
                             { title: "Gestion des Pays membres" }
                         ]}

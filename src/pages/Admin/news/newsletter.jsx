@@ -159,7 +159,7 @@ export default function NewsletterSubscribersManagement() {
                     </h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: "Gestion des Abonnés à la Newsletter" },
                         ]}
                     />

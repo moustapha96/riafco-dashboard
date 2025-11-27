@@ -108,7 +108,7 @@ const NewsDetails = () => {
                     </h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/admin/news">Gestion des Articles</Link> },
                             { title: "Détails de l'article" },
                         ]}

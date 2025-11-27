@@ -230,7 +230,7 @@ const ContactManagement = () => {
                     <h5 className="text-lg font-semibold">Gestion de À propos</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: "Contacts" },
                         ]}
                     />

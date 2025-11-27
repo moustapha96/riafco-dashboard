@@ -107,7 +107,7 @@ const ActivitesDetails = () => {
                     </h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: <Link to="/admin/activities">Gestion des Activités</Link> },
                             { title: activity?.title || "Détails de l'Activité" }
                         ]}

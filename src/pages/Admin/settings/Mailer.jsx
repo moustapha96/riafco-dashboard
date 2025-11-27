@@ -98,7 +98,7 @@ const MailerManagement = () => {
                     <h5 className="text-lg font-semibold">Envoi de mail</h5>
                     <Breadcrumb
                         items={[
-                            { title: <Link to="/">Dashboard</Link> },
+                            { title: <Link to="/">Tableau de bord</Link> },
                             { title: "Envoi de mail" },
                         ]}
                     />
