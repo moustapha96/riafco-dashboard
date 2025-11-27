@@ -38,6 +38,7 @@ import {
 import authService from "../../services/authService"
 import { toast } from "sonner"
 import { useAuth } from "../../hooks/useAuth"
+import { buildImageUrl } from "../../../../riafco-frontend/src/utils/imageUtils"
 
 const { Title, Text } = Typography
 
@@ -218,7 +219,7 @@ export default function UserProfile() {
                                                 <Upload showUploadList={false} beforeUpload={handleAvatarUpload} accept="image/*">
                                                     <Avatar
                                                         size={120}
-                                                        src={userData.profilePic}
+                                                        src={buildImageUrl(userData.profilePic)}
                                                         icon={<UserOutlined />}
                                                         style={{
                                                             cursor: "pointer",

@@ -21,6 +21,7 @@ import {
     UserOutlined
 } from "@ant-design/icons"
 import { LiaSignOutAltSolid } from "react-icons/lia";
+import { buildImageUrl } from "../../../riafco-frontend/src/utils/imageUtils";
 export default function Topnav({ setToggle, toggle }) {
 
     let [notification, setNotification] = useState(false)
@@ -96,50 +97,7 @@ export default function Topnav({ setToggle, toggle }) {
 
 
                     <ul className="list-none mb-0 space-x-1">
-                        {/* Notifications Dropdown */}
-                        {/* <li className="dropdown inline-block relative" ref={notificationRef}>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    setNotification(!notification)
-                                }}
-                                className="dropdown-toggle size-8 inline-flex items-center justify-center tracking-wide align-middle duration-500 text-[20px] text-center bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-100 dark:border-gray-800 text-slate-900 dark:text-white rounded-full"
-                                type="button"
-                            >
-                                <Icon.Bell className="size-4" />
-                                <span className="absolute top-0 end-0 flex items-center justify-center bg-red-600 text-white text-[10px] font-bold rounded-full size-2 after:content-[''] after:absolute after:size-2 after:bg-red-600 after:top-0 after:end-0 after:rounded-full after:animate-ping"></span>
-                            </button>
-
-                            <div
-                                className={`dropdown-menu absolute end-0 m-0 mt-4 z-10 w-64 rounded-md overflow-hidden bg-white dark:bg-slate-900 shadow-sm dark:shadow-gray-700 ${notification ? "" : "hidden"}`}
-                                onClick={stopPropagation}
-                            >
-                                <span className="px-4 py-4 flex justify-between">
-                                    <span className="font-semibold">Notifications</span>
-                                    <span className="flex items-center justify-center bg-red-600/20 text-red-600 text-[10px] font-bold rounded-full w-5 max-h-5 ms-1">
-                                        3
-                                    </span>
-                                </span>
-                                <SimpleBarReact className="h-64">
-                                    <ul className="py-2 text-start h-64 border-t border-gray-100 dark:border-gray-800">
-                                        <li>
-                                            <Link to="#!" className="block font-medium py-1.5 px-4">
-                                                <div className="flex items-center">
-                                                    <div className="size-10 rounded-md shadow-sm shadow-[var(--riafco-blue)]/10 dark:shadow-gray-700 bg-[var(--riafco-blue)]/10 dark:bg-slate-800 text-[var(--riafco-blue)] dark:text-white flex items-center justify-center">
-                                                        <Icon.ShoppingCart className="size-4" />
-                                                    </div>
-                                                    <div className="ms-2">
-                                                        <span className="text-[15px] font-semibold block">Order Complete</span>
-                                                        <small className="text-slate-400">15 min ago</small>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        </li>
-                                    </ul>
-                                </SimpleBarReact>
-                            </div>
-                        </li> */}
-
+                        
                         {/* User Profile Dropdown */}
                         <li className="dropdown inline-block relative" ref={userMenuRef}>
                             <button
@@ -158,7 +116,7 @@ export default function Topnav({ setToggle, toggle }) {
                                         <Avatar
                                             size={50}
 
-                                            src={user?.profilePic}
+                                            src={buildImageUrl(user?.profilePic)}
                                             alt="riafco avatar"
                                             icon={<UserOutlined />}
                                             style={{
