@@ -21,7 +21,6 @@ import {
     UserOutlined
 } from "@ant-design/icons"
 import { LiaSignOutAltSolid } from "react-icons/lia";
-import { buildImageUrl } from "../../../riafco-frontend/src/utils/imageUtils";
 export default function Topnav({ setToggle, toggle }) {
 
     let [notification, setNotification] = useState(false)
@@ -115,7 +114,7 @@ export default function Topnav({ setToggle, toggle }) {
                                     <div className="round-full">
                                         <Avatar
                                             size={50}
-                                            src={buildImageUrl(user?.profilePic)}
+                                            src={`${import.meta.env.VITE_API_URL_SIMPLE || 'https://back.riafco-oi.org/'}${user?.profilePic}`}
                                             alt="riafco avatar"
                                             icon={<UserOutlined />}
                                             style={{
