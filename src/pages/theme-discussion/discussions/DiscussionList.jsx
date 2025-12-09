@@ -169,18 +169,18 @@ const DiscussionList = () => {
         {
             type: "divider",
         },
-        {
-            key: "pin",
-            label: discussion.isPinned ? "Désépingler" : "Épingler",
-            icon: <PushpinOutlined />,
-            onClick: () => handleTogglePin(discussion.id),
-        },
-        {
-            key: "close",
-            label: discussion.isClosed ? "Rouvrir" : "Fermer",
-            icon: <LockOutlined />,
-            onClick: () => handleToggleClose(discussion.id),
-        },
+        // {
+        //     key: "pin",
+        //     label: discussion.isPinned ? "Désépingler" : "Épingler",
+        //     icon: <PushpinOutlined />,
+        //     onClick: () => handleTogglePin(discussion.id),
+        // },
+        // {
+        //     key: "close",
+        //     label: discussion.isClosed ? "Rouvrir" : "Fermer",
+        //     icon: <LockOutlined />,
+        //     onClick: () => handleToggleClose(discussion.id),
+        // },
     ]
 
     if (error) {
@@ -260,7 +260,7 @@ const DiscussionList = () => {
                                 >
                                     <Option value="ACTIVE">Active</Option>
                                     <Option value="CLOSED">Fermée</Option>
-                                    <Option value="PINNED">Épinglée</Option>
+                                    {/* <Option value="PINNED">Épinglée</Option> */}
                                 </Select>
                             </Col>
                             <Col xs={24} sm={12} lg={4}>

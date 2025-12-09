@@ -1,6 +1,6 @@
 
 
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { ProtectedRoute } from "./ProtectedRoute"
 
 
@@ -88,7 +88,9 @@ export const AppRoutes = () => {
       <Route path="/auth/not-access" element={<AuthNotAccess />} />
       <Route path="/auth/activate" element={<AuthActivateAccount />} />
       <Route path="/error-page" element={<ErrorPage />} />
-      <Route path="*" element={<ErrorPage />} />
+
+      {/* <Route path="*" element={<ErrorPage />} /> */}
+      
 
       {/* Auth requis (pas de permission spécifique) */}
       <Route element={<ProtectedRoute />}>
@@ -207,6 +209,9 @@ export const AppRoutes = () => {
         <Route path="/admin/ifcl/create" element={<IFCLFormAdmin />} />
         <Route path="/admin/ifcl/maps" element={<MapsIfcl />} />
       </Route>
+
+
+      <Route path="*" element={<Navigate to="/error-page" replace />} />
     </Routes>
   )
 }

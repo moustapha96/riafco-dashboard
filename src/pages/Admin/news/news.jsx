@@ -100,6 +100,7 @@ const NewsManagement = () => {
             }
             console.log(params)
             const response = await newsService.getAll(params)
+            console.log(response)
             setNews(response.news)
             setPagination(prev => ({
                 ...prev,
@@ -144,7 +145,7 @@ const NewsManagement = () => {
                     uid: "-1",
                     name: "image.jpg",
                     status: "done",
-                    url: newsItem.image,
+                    url: buildImageUrl(newsItem.image),
                 }]
                 : []
         )
@@ -153,7 +154,7 @@ const NewsManagement = () => {
                 uid: `-${index + 2}`,
                 name: `gallery-${index}.jpg`,
                 status: "done",
-                url: url,
+                url: buildImageUrl(url),
             })) || []
         )
         setModalVisible(true)
@@ -718,7 +719,7 @@ const NewsManagement = () => {
                                         {galleryList.map((file, index) => (
                                             <Col key={index}>
                                                 <img
-                                                    src={file.url || file.thumbUrl}
+                                                    src={buildImageUrl(file.url) || buildImageUrl(file.thumbUrl)}
                                                     alt={`Gallery ${index}`}
                                                     style={{ width: "100px", height: "100px", objectFit: "cover" }}
                                                 />

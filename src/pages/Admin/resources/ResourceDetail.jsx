@@ -14,10 +14,12 @@ import {
 } from "@ant-design/icons";
 import resourceService from "../../../services/resourceService";
 import { buildImageUrl } from "../../../utils/imageUtils";
+import { useAuth } from "../../../hooks/useAuth";
 
 const { Title, Paragraph, Text } = Typography;
 
 export default function ResourceDetail() {
+  const { user } = useAuth();
   const { id } = useParams();
   const nav = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -56,20 +58,77 @@ export default function ResourceDetail() {
     );
   }
 
-  const fileUrl = buildImageUrl(res.url || res.fileName);
+  // Déterminer l'URL du fichier à télécharger
+  // Priorité: filePath > url > fileName
+  const getFileUrl = () => {
+    if (res.filePath) {
+      return buildImageUrl(res.fileName);
+    }
+    if (res.url) {
+      // Si url est une URL externe complète, la retourner telle quelle
+      if (/^https?:\/\//i.test(res.url)) {
+        return res.url;
+      }
+      return buildImageUrl(res.url);
+    }
+    if (res.fileName) {
+      // Construire le chemin si on n'a que le nom de fichier
+      return buildImageUrl(`/resources/${res.fileName}`);
+    }
+    return null;
+  };
+
+  const fileUrl = getFileUrl();
   const created = res.createdAt ? new Date(res.createdAt).toLocaleString("fr-FR") : "-";
-  const sizeMB = res.fileSize ? (res.fileSize / (1024 * 1024)).toFixed(2) + " MB" : "-";
+  const updated = res.updatedAt ? new Date(res.updatedAt).toLocaleString("fr-FR") : "-";
+  
+  // Convertir la taille en MB (fileSize est en MB selon l'exemple)
+  const sizeMB = res.fileSize 
+    ? (typeof res.fileSize === 'number' 
+        ? res.fileSize >= 1024 
+          ? (res.fileSize / 1024).toFixed(2) + " MB" 
+          : res.fileSize + " MB"
+        : res.fileSize + " MB")
+    : "-";
 
-
-    const handleDownload = async () => {
+  // Gérer le téléchargement du fichier
+  const handleDownload = async () => {
     try {
-      // backend renvoie `url` prioritaire, fallback fileName
-      const url = res.url || res.fileName;
-      if (url) window.open(url, "_blank");
+      if (fileUrl) {
+        // Si c'est une URL externe ou un fichier, ouvrir dans un nouvel onglet
+        window.open(fileUrl, "_blank");
+      } else {
+        // Fallback: utiliser l'endpoint de téléchargement du service
+        try {
+          const blob = await resourceService.download(res.id);
+          const url = window.URL.createObjectURL(blob.data);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = res.fileName || 'resource';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("Error downloading resource:", error);
+          throw error;
+        }
+      }
     } catch (error) {
       console.error("Error downloading resource:", error);
     }
   };
+
+  // Déterminer si la ressource a un fichier téléchargeable
+  const hasDownloadableFile = !!(res.filePath || res.url || res.fileName);
+  
+  // Déterminer si la ressource a un lien externe (URL complète avec http/https)
+  const hasExternalLink = !!(res.lien && /^https?:\/\//i.test(res.lien)) || !!(res.url && /^https?:\/\//i.test(res.url));
+  
+  // URL du lien externe (priorité: lien > url si url est externe)
+  const externalLink = (res.lien && /^https?:\/\//i.test(res.lien)) 
+    ? res.lien 
+    : (res.url && /^https?:\/\//i.test(res.url) ? res.url : null);
 
 
   return (
@@ -101,7 +160,7 @@ export default function ResourceDetail() {
               </Title>
 
               <Space>
-                {fileUrl && (
+                {hasDownloadableFile && (
                   <Button
                     type="primary"
                     icon={<DownloadOutlined />}
@@ -110,9 +169,12 @@ export default function ResourceDetail() {
                     Télécharger
                   </Button>
                 )}
-                {res.lien && (
-                  <Button icon={<LinkOutlined />} onClick={() => window.open(res.lien, "_blank")}>
-                    Ouvrir le lien
+                {externalLink && (
+                  <Button 
+                    icon={<LinkOutlined />} 
+                    onClick={() => window.open(externalLink, "_blank")}
+                  >
+                    Ouvrir le lien externe
                   </Button>
                 )}
               </Space>
@@ -120,10 +182,11 @@ export default function ResourceDetail() {
 
             {res.couverture && (
               <Image
-                src={res.couverture}
+                src={buildImageUrl(res.couverture)}
                 alt="Couverture"
-                style={{ maxHeight: 320, objectFit: "cover", borderRadius: 12 }}
+                style={{ maxHeight: 320, objectFit: "cover", borderRadius: 12, width: "100%" }}
                 preview
+                fallback="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EImage%3C/text%3E%3C/svg%3E"
               />
             )}
 
@@ -135,26 +198,51 @@ export default function ResourceDetail() {
               <Descriptions.Item label="Catégorie">
                 {res.category?.name ? <Tag color="blue">{res.category.name}</Tag> : "-"}
               </Descriptions.Item>
-              <Descriptions.Item label="Taille">{sizeMB}</Descriptions.Item>
-              <Descriptions.Item label="Type de fichier">{res.fileType || "-"}</Descriptions.Item>
+              
+              {hasDownloadableFile &&  (user?.role == "SUPER_ADMIN" || user?.role ==="ADMIN") && (
+                <>
+                  <Descriptions.Item label="Nom du fichier">
+                    {res.fileName || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Taille du fichier">{sizeMB}</Descriptions.Item>
+                  <Descriptions.Item label="Type de fichier">{res.fileType || "-"}</Descriptions.Item>
+                </>
+              )}
+              
               <Descriptions.Item label="Créée le">{created}</Descriptions.Item>
+              
+              {res.updatedAt && res.updatedAt !== res.createdAt && (
+                <Descriptions.Item label="Modifiée le">{updated}</Descriptions.Item>
+              )}
              
-              <Descriptions.Item label="Lien externe">
-                {res.lien ? (
-                  <a href={res.lien} target="_blank" rel="noreferrer">
-                    {res.lien}
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </Descriptions.Item>
+              {(externalLink || res.url) && (
+                <Descriptions.Item label="Lien externe / URL">
+                  {externalLink ? (
+                    <a href={externalLink} target="_blank" rel="noreferrer">
+                      {externalLink}
+                    </a>
+                  ) : res.url ? (
+                    <Text type="secondary">{res.url}</Text>
+                  ) : (
+                    "-"
+                  )}
+                </Descriptions.Item>
+              )}
+              
+              {res.filePath && (user?.role == "SUPER_ADMIN" || user?.role ==="ADMIN") && (
+                <Descriptions.Item label="Chemin du fichier">
+                  <Text code>{res.filePath}</Text>
+                </Descriptions.Item>
+              )}
+              
               <Descriptions.Item label="Visibilité">
                 {res.isPublic ? <Tag color="green">Publique</Tag> : <Tag color="red">Privée</Tag>}
               </Descriptions.Item>
+              
               <Descriptions.Item label="Tags">
                 <Space wrap>
                   {Array.isArray(res.tags) && res.tags.length
-                    ? res.tags.map((t, i) => <Tag key={`${t}-${i}`}>{t}</Tag>)
+                    ? res.tags.map((t, i) => <Tag key={`${t}-${i}`} color="blue">{t}</Tag>)
                     : "-"}
                 </Space>
               </Descriptions.Item>

@@ -437,9 +437,9 @@ export default function AuthNewPassword() {
 
                             <div className="text-center mt-6">
                                 <p className="mb-0 text-slate-400 text-sm">
-                                    © {new Date().getFullYear()} RIAFCO. Réalisé avec ❤️ par{" "}
+                                    © {new Date().getFullYear()} RIAFCO. Réalisé par{" "}
                                     <Link to="https://alhussein-khouma.vercel.app/" target="_blank" className="text-[var(--riafco-blue)] hover:underline">
-                                        ADM
+                                        Alhouma
                                     </Link>.
                                 </p>
                             </div>

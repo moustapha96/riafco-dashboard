@@ -13,6 +13,7 @@ import activityService from "../../../services/activityService"
 import { FaHandshake } from "react-icons/fa"
 import { toast } from "sonner"
 import ReactQuill from "react-quill"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title } = Typography
 const { Option } = Select
@@ -59,7 +60,7 @@ const ActivitesEdit = () => {
                             uid: "-1",
                             name: "image.jpg",
                             status: "done",
-                            url: activity.image,
+                            url: buildImageUrl(activity.image),
                         },
                     ]
                     : [],
@@ -69,7 +70,7 @@ const ActivitesEdit = () => {
                     uid: `-${index + 2}`,
                     name: `gallery-${index}.jpg`,
                     status: "done",
-                    url: url,
+                    url: buildImageUrl(url),
                 })) || []
             )
         } catch (error) {
@@ -287,7 +288,7 @@ const ActivitesEdit = () => {
                                         {galleryList.map((file, index) => (
                                             <Col key={index}>
                                                 <img
-                                                    src={file.url || file.thumbUrl}
+                                                    src={buildImageUrl(file.url) || buildImageUrl(file.thumbUrl)}
                                                     alt={`Gallery ${index}`}
                                                     style={{ width: "100px", height: "100px", objectFit: "cover" }}
                                                 />
@@ -303,7 +304,7 @@ const ActivitesEdit = () => {
                                     <Button size="large" onClick={() => navigate("/admin/activities")}>
                                         Annuler
                                     </Button>
-                                    <Button type="primary" htmlType="submit" loading={loading} size="large">
+                                    <Button type="submit"  loading={loading} size="large">
                                         {isEditing ? "Mettre à jour" : "Créer l'activité"}
                                     </Button>
                                 </Space>

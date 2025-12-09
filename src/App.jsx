@@ -29,7 +29,7 @@ function App() {
     "/error",
     "/thankyou",
     "/error-page",
-    "*"
+
   ]
 
   const { loading } = useAuth()

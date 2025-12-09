@@ -87,6 +87,8 @@ import { Link, useNavigate } from "react-router-dom"
 
 import logoImg from "../../assets/images/logo-light.png"
 import lockImg from "../../assets/images/contact.svg" // image de fond (peut être remplacée)
+import riafcoAbout1 from "../../assets/images/riafco-about-1.jpg";
+
 
 export default function AuthNotAccess() {
     const navigate = useNavigate()
@@ -102,7 +104,7 @@ export default function AuthNotAccess() {
     return (
         <section
             className="md:h-screen py-36 flex items-center relative bg-no-repeat bg-center bg-cover"
-            style={{ backgroundImage: `url(${lockImg})` }}
+            style={{ backgroundImage: `url(${riafcoAbout1})` }}
         >
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70" />
 

@@ -146,7 +146,7 @@ const AdminUserEdit = () => {
                     <h5 className="text-lg font-semibold">Détails de l'utilisateur</h5>
                     <Breadcrumb
                         items={[
-                            { title: <a href="/">Dashboadr</a> },
+                            { title: <a href="/">Tableau de bord</a> },
                             { title: <a href="/admin/users">Utilisateurs</a> },
                             { title: id ? "Modifier l'utilisateur" : "Nouvel utilisateur" },
                         ]}

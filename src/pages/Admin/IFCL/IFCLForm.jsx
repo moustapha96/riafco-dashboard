@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Form, Input, Select, Button, Card, Breadcrumb, message, Upload,  Avatar } from "antd";
+import { Form, Input, Select, Button, Card, Breadcrumb, message, Upload, Avatar } from "antd";
 import { SaveOutlined, UploadOutlined, UserOutlined } from "@ant-design/icons";
 import ifclService from "../../../services/ifclService";
 import { toast } from "sonner";
@@ -107,6 +107,20 @@ const IFCLFormAdmin = () => {
         "list", "bullet",
         "link", "image",
     ];
+
+
+    const handleUploadChange = (info) => {
+        const { fileList } = info;
+
+        if (fileList && fileList.length > 0 && fileList[0].originFileObj) {
+            const file = fileList[0].originFileObj;
+            const previewUrl = URL.createObjectURL(file);
+            setImageUrl(previewUrl);
+        } else {
+            setImageUrl(null);
+        }
+    };
+
 
     const normFile = (e) => {
         if (Array.isArray(e)) return e;
@@ -227,13 +241,45 @@ const IFCLFormAdmin = () => {
                                     <Input placeholder="Ex: 14.7167° N, 17.4677° W" />
                                 </Form.Item>
 
-                                <Form.Item label="Drapeau" name="upload" valuePropName="fileList" getValueFromEvent={normFile}>
+
+                                <Form.Item
+                                    label="Drapeau"
+                                    name="upload"
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
+                                >
+                                    <Upload
+                                        name="flag"
+                                        listType="picture-card"
+                                        showUploadList={false}
+                                        beforeUpload={() => false}  // on ne l'upload pas automatiquement
+                                        onChange={handleUploadChange}
+                                    >
+                                        {imageUrl ? (
+                                            <Avatar
+                                                size={128}
+                                                src={imageUrl}              // 👈 URL backend OU blob: locale
+                                                icon={<UserOutlined />}
+                                            />
+                                        ) : (
+                                            <div>
+                                                <UploadOutlined />
+                                                <div style={{ marginTop: 8 }}>Téléverser</div>
+                                            </div>
+                                        )}
+                                    </Upload>
+                                </Form.Item>
+
+
+
+
+                                {/* <Form.Item label="Drapeau" name="upload" valuePropName="fileList" getValueFromEvent={normFile}>
                                     <Upload
                                         name="flag"
                                         listType="picture-card"
                                         showUploadList={false}
                                         beforeUpload={() => false}
-                                        onChange={({ file }) => setImageUrl(buildImageUrl(URL.createObjectURL(file)))}
+                                        onChange={({ file }) => setImageUrl(URL.createObjectURL(file))}
                                     >
                                         {imageUrl ? (
                                             <Avatar size={128} src={buildImageUrl(imageUrl)} icon={<UserOutlined />} />
@@ -244,7 +290,7 @@ const IFCLFormAdmin = () => {
                                             </div>
                                         )}
                                     </Upload>
-                                </Form.Item>
+                                </Form.Item> */}
                             </div>
 
                             {/* Statut */}
