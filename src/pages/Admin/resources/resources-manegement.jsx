@@ -771,10 +771,7 @@ const ResourcesManagement = () => {
                   </div>
                 </Form.Item>
 
-                <Form.Item label="Ressource publique" name="isPublic" valuePropName="checked">
-                  <Switch />
-                </Form.Item>
-
+               
                 <Form.Item>
                   <Space>
                     <Button

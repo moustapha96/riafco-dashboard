@@ -99,10 +99,10 @@ const AdminUserDetail = () => {
                     <h3 className="text-lg font-semibold mb-4">Permissions</h3>
                     <Space wrap>
                         {user.permissions && user.permissions.length > 0 ? (
-                            user.permissions.map((permission) => (
-                                <Tag key={permission} color="blue">
+                            user.permissions.map((permission, index) => (
+                                <Tag key={permission.id || permission.name || index} color="blue">
                                     {/* {permissionLabels[permission] || permission} */}
-                                    {permission.name}
+                                    {permission.name || permission}
                                 </Tag>
                             ))
                         ) : (

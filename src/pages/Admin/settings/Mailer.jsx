@@ -1,6 +1,6 @@
 
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     Card,
     Form,
@@ -14,6 +14,7 @@ import {
     Alert,
     Typography,
     Divider,
+    Select,
 } from "antd";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -32,11 +33,56 @@ const MailerManagement = () => {
     const [attachments, setAttachments] = useState([]);
     const [recipientInput, setRecipientInput] = useState("");
     const recipientInputRef = useRef(null);
+    const [users, setUsers] = useState([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
 
     // Validation d'email
     const isValidEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
+    };
+
+    // Charger la liste des utilisateurs au montage du composant
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setUsersLoading(true);
+            try {
+                const response = await userService.getAll({
+                    page: 1,
+                    limit: 1000, // Récupérer un grand nombre d'utilisateurs
+                    status: "ACTIVE", // Optionnel : seulement les utilisateurs actifs
+                });
+                setUsers(response.users || []);
+            } catch (error) {
+                console.error("Erreur lors de la récupération des utilisateurs:", error);
+                message.error("Impossible de charger la liste des utilisateurs");
+            } finally {
+                setUsersLoading(false);
+            }
+        };
+        fetchUsers();
+    }, []);
+
+    // Ajouter des utilisateurs sélectionnés aux destinataires
+    const handleUserSelection = (selectedIds) => {
+        // Mettre à jour les IDs sélectionnés dans le Select
+        setSelectedUserIds(selectedIds || []);
+        
+        if (!selectedIds || selectedIds.length === 0) {
+            return;
+        }
+        
+        // Extraire les emails des utilisateurs sélectionnés
+        const selectedUsers = users.filter(user => selectedIds.includes(user.id));
+        const newEmails = selectedUsers
+            .map(user => user.email)
+            .filter(email => email && isValidEmail(email) && !recipients.includes(email));
+        
+        if (newEmails.length > 0) {
+            setRecipients([...recipients, ...newEmails]);
+            message.success(`${newEmails.length} utilisateur(s) ajouté(s) aux destinataires`);
+        }
     };
 
     const addRecipient = (e) => {
@@ -81,6 +127,11 @@ const MailerManagement = () => {
 
     const removeRecipient = (email) => {
         setRecipients(recipients.filter((r) => r !== email));
+        // Retirer aussi l'utilisateur du Select si son email correspond
+        const userToRemove = users.find(user => user.email === email);
+        if (userToRemove) {
+            setSelectedUserIds(selectedUserIds.filter(id => id !== userToRemove.id));
+        }
     };
 
     const handleSendMail = async (values) => {
@@ -147,6 +198,7 @@ const MailerManagement = () => {
             setRecipients([]);
             setAttachments([]);
             setRecipientInput("");
+            setSelectedUserIds([]);
         } catch (error) {
             console.error("Erreur lors de l'envoi du mail:", error);
             const errorMessage = error?.response?.data?.message || error?.message || "Échec de l'envoi du mail";
@@ -225,10 +277,35 @@ const MailerManagement = () => {
                             }
                             required
                         >
+                            <div style={{ marginBottom: 12 }}>
+                                <Select
+                                    mode="multiple"
+                                    placeholder="Sélectionnez des utilisateurs du système (plusieurs sélections possibles)"
+                                    style={{ width: "100%" }}
+                                    loading={usersLoading}
+                                    showSearch
+                                    value={selectedUserIds}
+                                    maxTagCount="responsive"
+                                    allowClear
+                                    optionFilterProp="label"
+                                    filterOption={(input, option) =>
+                                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                    }
+                                    onChange={handleUserSelection}
+                                    options={users
+                                        .filter(user => user.email && isValidEmail(user.email))
+                                        .map(user => ({
+                                            value: user.id,
+                                            label: `${user.firstName || ''} ${user.lastName || ''} (${user.email})`.trim(),
+                                            email: user.email,
+                                        }))}
+                                    notFoundContent={usersLoading ? "Chargement..." : "Aucun utilisateur trouvé"}
+                                />
+                            </div>
                             <Space.Compact style={{ width: "100%" }}>
                                 <Input
                                     ref={recipientInputRef}
-                                    placeholder="Tapez un email et appuyez sur Entrée"
+                                    placeholder="Ou tapez un email manuellement et appuyez sur Entrée"
                                     value={recipientInput}
                                     onChange={(e) => setRecipientInput(e.target.value)}
                                     onKeyDown={addRecipient}
@@ -259,7 +336,7 @@ const MailerManagement = () => {
                             )}
                             {recipients.length === 0 && (
                                 <Text type="secondary" style={{ fontSize: "12px", display: "block", marginTop: 8 }}>
-                                    Ajoutez au moins un destinataire
+                                    Ajoutez au moins un destinataire (sélectionnez des utilisateurs ou saisissez un email)
                                 </Text>
                             )}
                         </Form.Item>
@@ -359,6 +436,7 @@ const MailerManagement = () => {
                                         setRecipients([]);
                                         setAttachments([]);
                                         setRecipientInput("");
+                                        setSelectedUserIds([]);
                                     }}
                                     disabled={mailLoading}
                                 >
