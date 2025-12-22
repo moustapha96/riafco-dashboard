@@ -225,7 +225,7 @@ const UserListAdmin = () => {
                         <Link to={`/admin/users/${record.id}/edit`}>Modifier</Link>
                     </Button>
 
-                    {currentUser?.role === "SUPER_ADMIN" && record.role !== "SUPER_ADMIN" && (
+                    {(currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN") && record.role !== "SUPER_ADMIN" && (
                         <Button
                             type="link"
                             danger

@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Form, Input, InputNumber, Button, Card, Breadcrumb, message, Upload, Avatar } from "antd";
 import { SaveOutlined, UploadOutlined, UserOutlined } from "@ant-design/icons";
 import teamMemberService from "../../../services/teamMemberService";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 const { TextArea } = Input;
 
@@ -16,7 +17,7 @@ const TeamMemberFormAdmin = () => {
     const [initialLoading, setInitialLoading] = useState(false);
     const isEdit = !!id;
 
-    const [imageUrl, setImageUrl] = useState(null);
+    const [fileList, setFileList] = useState([]);
 
     useEffect(() => {
         if (isEdit) {
@@ -28,8 +29,23 @@ const TeamMemberFormAdmin = () => {
         setInitialLoading(true);
         try {
             const response = await teamMemberService.getById(id);
-            console.log(response);
-            form.setFieldsValue(response.teamMember);
+            const teamMember = response.teamMember || response.data;
+            console.log(teamMember);
+            form.setFieldsValue(teamMember);
+            
+            // Charger l'image existante si elle existe
+            if (teamMember.photo) {
+                const imageUrl = buildImageUrl(teamMember.photo);
+                setFileList([
+                    {
+                        uid: "-1",
+                        name: "photo.jpg",
+                        status: "done",
+                        url: imageUrl,
+                        thumbUrl: imageUrl,
+                    },
+                ]);
+            }
         } catch (error) {
             console.error("Erreur lors de la récupération des détails:", error);
             message.error("Erreur lors du chargement des données");
@@ -80,9 +96,9 @@ const TeamMemberFormAdmin = () => {
             formData.append("order", values.order);
             formData.append("bio", values.bio || "");
 
-
-            if (values.upload?.[0]) {
-                formData.append("photo", values.upload[0].originFileObj);
+            // Utiliser fileList du state pour les nouveaux fichiers
+            if (fileList.length > 0 && fileList[0].originFileObj) {
+                formData.append("photo", fileList[0].originFileObj);
             }
 
             if (isEdit) {
@@ -92,6 +108,14 @@ const TeamMemberFormAdmin = () => {
                 await teamMemberService.create(formData);
                 message.success("Membre ajouté avec succès");
             }
+
+            // Nettoyer les URLs blob après la soumission
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url);
+                }
+            });
+
             navigate("/admin/team-members");
         } catch (error) {
             console.error("Erreur lors de la sauvegarde:", error);
@@ -100,10 +124,48 @@ const TeamMemberFormAdmin = () => {
             setLoading(false);
         }
     };
-    const normFile = (e) => {
-        if (Array.isArray(e)) return e;
-        return e?.fileList;
+
+    const handleImageChange = ({ fileList: newFileList }) => {
+        const updatedFileList = newFileList.map((file) => {
+            if (file.originFileObj) {
+                // Nouveau fichier sélectionné
+                const blobUrl = URL.createObjectURL(file.originFileObj);
+                return {
+                    ...file,
+                    url: blobUrl,
+                    thumbUrl: blobUrl,
+                };
+            }
+            // Pour les fichiers existants, s'assurer que thumbUrl est défini
+            if (file.url && !file.thumbUrl) {
+                return {
+                    ...file,
+                    thumbUrl: file.url,
+                };
+            }
+            return file;
+        });
+        setFileList(updatedFileList);
     };
+
+    const handleImageRemove = (file) => {
+        if (file.url && file.url.startsWith('blob:')) {
+            URL.revokeObjectURL(file.url);
+        }
+        setFileList([]);
+        return true;
+    };
+
+    // Nettoyer les URLs blob lors du démontage
+    useEffect(() => {
+        return () => {
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url);
+                }
+            });
+        };
+    }, [fileList]);
 
     if (initialLoading) {
         return <div>Chargement...</div>;
@@ -156,18 +218,25 @@ const TeamMemberFormAdmin = () => {
                                     </Upload>
                                 </Form.Item> */}
 
-                                <Form.Item label="Photo" name="upload"
-                                    valuePropName="fileList" getValueFromEvent={normFile}>
+                                <Form.Item label="Photo">
                                     <Upload
                                         name="photo"
                                         listType="picture-card"
-                                        showUploadList={false}
-                                        beforeUpload={() => false}
-                                        onChange={({ file }) => setImageUrl(URL.createObjectURL(file))}
+                                        fileList={fileList}
+                                        accept="image/*"
+                                        beforeUpload={(file) => {
+                                            const isImage = file.type.startsWith('image/');
+                                            if (!isImage) {
+                                                message.error('Vous ne pouvez téléverser que des fichiers image!');
+                                                return Upload.LIST_IGNORE;
+                                            }
+                                            return false; // Empêcher l'upload automatique
+                                        }}
+                                        onChange={handleImageChange}
+                                        onRemove={handleImageRemove}
+                                        maxCount={1}
                                     >
-                                        {imageUrl ? (
-                                            <Avatar size={128} src={imageUrl} icon={<UserOutlined />} />
-                                        ) : (
+                                        {fileList.length < 1 && (
                                             <div>
                                                 <UploadOutlined />
                                                 <div style={{ marginTop: 8 }}>Téléverser</div>

@@ -5,21 +5,15 @@ import {
     Input,
     Button,
     Switch,
-    Table,
     Breadcrumb,
     Space,
-    Popconfirm,
-    Tag,
-    Modal,
     Upload,
-    Avatar,
+    Spin,
+    Typography,
 } from "antd";
 import {
-    EditOutlined,
-    DeleteOutlined,
-    PlusOutlined,
     UploadOutlined,
-    GlobalOutlined,
+    SaveOutlined,
 } from "@ant-design/icons";
 import organizationService from "../../../services/organizationService";
 import { Link } from "react-router-dom";
@@ -31,23 +25,33 @@ import { buildImageUrl } from "../../../utils/imageUtils";
 
 
 
+const { Title } = Typography;
+
 const AboutManagement = () => {
     // États pour le formulaire
-    const [aboutUsList, setAboutUsList] = useState([]);
+    const [aboutUsData, setAboutUsData] = useState(null);
     const [aboutUsLoading, setAboutUsLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [frenchContent, setFrenchContent] = useState("");
     const [englishContent, setEnglishContent] = useState("");
     const [aboutUsForm] = Form.useForm();
+    const [fileList, setFileList] = useState([]);
 
-    // États pour la gestion du modal d'édition/création
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [editingAboutUs, setEditingAboutUs] = useState(null);
-
-    const [fileList, setFileList] = useState([])
     // Chargement initial
     useEffect(() => {
-        loadAboutUsList();
+        loadAboutUs();
     }, []);
+
+    // Nettoyer les URLs blob lors du démontage
+    useEffect(() => {
+        return () => {
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+        }
+    }, [fileList])
 
     // Configuration pour ReactQuill
     const quillModules = {
@@ -67,65 +71,102 @@ const AboutManagement = () => {
         "link", "image",
     ];
 
+    const handleImageChange = ({ fileList: newFileList }) => {
+        const updatedFileList = newFileList.map((file) => {
+            if (file.originFileObj) {
+                // Nouveau fichier sélectionné
+                const blobUrl = URL.createObjectURL(file.originFileObj)
+                return {
+                    ...file,
+                    url: blobUrl,
+                    thumbUrl: blobUrl, // Nécessaire pour l'affichage dans picture-card
+                }
+            }
+            // Pour les fichiers existants, s'assurer que thumbUrl est défini
+            if (file.url && !file.thumbUrl) {
+                return {
+                    ...file,
+                    thumbUrl: file.url,
+                }
+            }
+            return file
+        })
+        setFileList(updatedFileList)
+    }
+
+    const handleImageRemove = (file) => {
+        if (file.url && file.url.startsWith('blob:')) {
+            URL.revokeObjectURL(file.url)
+        }
+        return true
+    }
+
     const uploadProps = {
         fileList,
-        onChange: ({ fileList: newFileList }) => setFileList(newFileList),
+        onChange: handleImageChange,
+        onRemove: handleImageRemove,
         beforeUpload: () => false,
         maxCount: 1,
         accept: "image/*",
+        listType: "picture-card",
     }
 
-    // Charger la liste des "À propos"
-    const loadAboutUsList = async () => {
+    // Charger l'enregistrement "À propos" unique
+    const loadAboutUs = async () => {
         try {
             setAboutUsLoading(true);
-            const response = await organizationService.getAllAboutUs();
-            console.log(response.data);
-            setAboutUsList(response.data || []);
+            const response = await organizationService.getAboutUs();
+            const data = response.aboutUs || response.data;
+            
+            if (data) {
+                setAboutUsData(data);
+                aboutUsForm.setFieldsValue({
+                    title_fr: data.title_fr || "",
+                    title_en: data.title_en || "",
+                    isPublished: data.isPublished || false,
+                });
+                setFrenchContent(data.paragraphe_fr || "");
+                setEnglishContent(data.paragraphe_en || "");
+                
+                // Préparer la liste des fichiers pour l'image existante
+                if (data.image) {
+                    const imageUrl = buildImageUrl(data.image);
+                    setFileList([
+                        {
+                            uid: "-1",
+                            name: "image.jpg",
+                            status: "done",
+                            url: imageUrl,
+                            thumbUrl: imageUrl,
+                        },
+                    ]);
+                } else {
+                    setFileList([]);
+                }
+            } else {
+                // Aucun enregistrement existant, formulaire vide pour création
+                setAboutUsData(null);
+                aboutUsForm.resetFields();
+                setFrenchContent("");
+                setEnglishContent("");
+                setFileList([]);
+            }
         } catch (error) {
-            console.error("Erreur lors du chargement des informations:", error);
-            toast.error("Erreur lors du chargement des informations");
+            // Si 404, c'est normal (aucun enregistrement), on laisse le formulaire vide
+            if (error?.response?.status !== 404) {
+                console.error("Erreur lors du chargement des informations:", error);
+                toast.error("Erreur lors du chargement des informations");
+            }
         } finally {
             setAboutUsLoading(false);
         }
     };
 
-    // Ouvrir le modal pour créer ou éditer
-    const openModal = (record = null) => {
-        if (record) {
-            setEditingAboutUs(record);
-            aboutUsForm.setFieldsValue({
-                title_fr: record.title_fr || "",
-                title_en: record.title_en || "",
-                isPublished: record.isPublished || false,
-            });
-            setFrenchContent(record.paragraphe_fr || "");
-            setEnglishContent(record.paragraphe_en || "");
-            setFileList(
-                record.image
-                    ? [
-                        {
-                            uid: "-1",
-                            name: "image.jpg",
-                            status: "done",
-                            url: record.image,
-                        },
-                    ]
-                    : [],
-            )
-        } else {
-            setEditingAboutUs(null);
-            aboutUsForm.resetFields();
-            setFrenchContent("");
-            setEnglishContent("");
-        }
-        setIsModalVisible(true);
-    };
 
     // Soumettre le formulaire
     const handleAboutUsSubmit = async (values) => {
         try {
-            setAboutUsLoading(true);
+            setSubmitting(true);
             const formData = new FormData();
             formData.append("title_fr", values.title_fr || "");
             formData.append("title_en", values.title_en || "");
@@ -133,39 +174,38 @@ const AboutManagement = () => {
             formData.append("paragraphe_en", englishContent || "");
             formData.append("isPublished", String(values.isPublished || false));
 
+            // Gérer l'image : utiliser originFileObj pour les nouveaux fichiers uniquement
             if (fileList.length > 0 && fileList[0].originFileObj) {
-                formData.append("image", fileList[0].originFileObj)
+                formData.append("image", fileList[0].originFileObj);
             }
 
-            if (editingAboutUs) {
-                await organizationService.updateAboutUs(editingAboutUs.id, formData);
+            if (aboutUsData?.id) {
+                // Mise à jour de l'enregistrement existant
+                await organizationService.updateAboutUs(aboutUsData.id, formData);
                 toast.success("Informations mises à jour avec succès");
             } else {
+                // Création d'un nouvel enregistrement
                 await organizationService.createAboutUs(formData);
                 toast.success("Informations créées avec succès");
             }
 
-            setIsModalVisible(false);
-            loadAboutUsList(); // Recharge la liste
+            // Nettoyer les URLs blob
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url);
+                }
+            });
+
+            // Recharger les données
+            await loadAboutUs();
         } catch (error) {
-            console.error("Erreur lors de la mise à jour:", error);
-            toast.error("Erreur lors de la mise à jour");
+            console.error("Erreur lors de la sauvegarde:", error);
+            toast.error("Erreur lors de la sauvegarde");
         } finally {
-            setAboutUsLoading(false);
+            setSubmitting(false);
         }
     };
 
-    // Supprimer un enregistrement
-    const handleDeleteAboutUs = async (id) => {
-        try {
-            await organizationService.deleteAboutUs(id);
-            toast.success("Enregistrement supprimé avec succès");
-            loadAboutUsList(); // Recharge la liste
-        } catch (error) {
-            console.error("Erreur lors de la suppression:", error);
-            toast.error("Erreur lors de la suppression");
-        }
-    };
 
     return (
         <div className="container-fluid relative px-3">
@@ -180,158 +220,94 @@ const AboutManagement = () => {
                     />
                 </div>
                 <div style={{ padding: "24px", maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
-                    <Card title="Liste des enregistrements 'À propos'"
-                        extra={
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={() => openModal()}
+                    {aboutUsLoading ? (
+                        <div style={{ textAlign: "center", padding: "50px" }}>
+                            <Spin size="large" />
+                        </div>
+                    ) : (
+                        <Card 
+                            title={
+                                <Title level={2} style={{ margin: 0 }}>
+                                    {aboutUsData ? "Modifier 'À propos'" : "Créer 'À propos'"}
+                                </Title>
+                            }
+                        >
+                            <Form
+                                form={aboutUsForm}
+                                layout="vertical"
+                                onFinish={handleAboutUsSubmit}
                             >
-                                Ajouter
-                            </Button>
-                        }
-                    >
-                        <Table
-                            dataSource={aboutUsList}
-                            rowKey="id"
-                            loading={aboutUsLoading}
-                            columns={[
-                                {
-                                    title: "Image",
-                                    dataIndex: "image",
-                                    key: "image",
-                                    render: (_, record) => (
-                                        <Space size="middle">
-                                            <Avatar size="default" icon={<GlobalOutlined />} src={buildImageUrl(record.image)} />
-                                        </Space>
-                                    ),
-                                },
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                                    <Form.Item
+                                        label="Titre (Français)"
+                                        name="title_fr"
+                                        rules={[{ required: true, message: "Veuillez saisir le titre en français" }]}
+                                    >
+                                        <Input placeholder="Qui sommes-nous ?" size="large" />
+                                    </Form.Item>
+                                    <Form.Item
+                                        label="Titre (Anglais)"
+                                        name="title_en"
+                                        rules={[{ required: true, message: "Veuillez saisir le titre en anglais" }]}
+                                    >
+                                        <Input placeholder="About Us" size="large" />
+                                    </Form.Item>
+                                </div>
+                                <Form.Item label="Contenu (Français)">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={frenchContent}
+                                        onChange={setFrenchContent}
+                                        modules={quillModules}
+                                        formats={quillFormats}
+                                        placeholder="Contenu en français..."
+                                        style={{ height: "200px", marginBottom: "24px" }}
+                                    />
+                                </Form.Item>
+                                <Form.Item label="Contenu (Anglais)">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={englishContent}
+                                        onChange={setEnglishContent}
+                                        modules={quillModules}
+                                        formats={quillFormats}
+                                        placeholder="Contenu en anglais..."
+                                        style={{ height: "200px", marginBottom: "24px" }}
+                                    />
+                                </Form.Item>
 
-                                {
-                                    title: "Titre (FR)",
-                                    dataIndex: "title_fr",
-                                    key: "title_fr",
-                                },
-                                {
-                                    title: "Titre (EN)",
-                                    dataIndex: "title_en",
-                                    key: "title_en",
-                                },
-                                {
-                                    title: "Statut",
-                                    key: "isPublished",
-                                    render: (_, record) => (
-                                        <Tag color={record.isPublished ? "green" : "orange"}>
-                                            {record.isPublished ? "Publié" : "Brouillon"}
-                                        </Tag>
-                                    ),
-                                },
-                                {
-                                    title: "Date de création",
-                                    dataIndex: "createdAt",
-                                    key: "createdAt",
-                                    render: (date) => dayjs(date).format("DD/MM/YYYY HH:mm"),
-                                },
-                                {
-                                    title: "Actions",
-                                    key: "actions",
-                                    render: (_, record) => (
-                                        <Space>
-                                            <Button
-                                                icon={<EditOutlined />}
-                                                onClick={() => openModal(record)}
-                                            />
-                                            <Popconfirm
-                                                title="Êtes-vous sûr de vouloir supprimer cet enregistrement ?"
-                                                onConfirm={() => handleDeleteAboutUs(record.id)}
-                                                okText="Oui"
-                                                cancelText="Non"
-                                            >
-                                                <Button danger icon={<DeleteOutlined />} />
-                                            </Popconfirm>
-                                        </Space>
-                                    ),
-                                },
-                            ]}
-                        />
-                    </Card>
+                                <Form.Item label="Image">
+                                    <Upload {...uploadProps}>
+                                        {fileList.length < 1 && (
+                                            <div>
+                                                <UploadOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
+                                                <div style={{ marginTop: 8 }}>Sélectionner une image</div>
+                                            </div>
+                                        )}
+                                    </Upload>
+                                </Form.Item>
+
+                                <Form.Item name="isPublished" valuePropName="checked" label="Statut de publication">
+                                    <Switch checkedChildren="Publié" unCheckedChildren="Brouillon" />
+                                </Form.Item>
+                                <Form.Item>
+                                    <Space>
+                                        <Button 
+                                            type="primary" 
+                                            htmlType="submit" 
+                                            loading={submitting}
+                                            icon={<SaveOutlined />}
+                                            size="large"
+                                        >
+                                            {aboutUsData ? "Mettre à jour" : "Créer"}
+                                        </Button>
+                                    </Space>
+                                </Form.Item>
+                            </Form>
+                        </Card>
+                    )}
                 </div>
             </div>
-
-            {/* Modal pour créer/éditer */}
-            <Modal
-                title={editingAboutUs ? "Modifier 'À propos'" : "Ajouter 'À propos'"}
-                open={isModalVisible}
-                onCancel={() => setIsModalVisible(false)}
-                footer={null}
-                width={800}
-            >
-                <Form
-                    form={aboutUsForm}
-                    layout="vertical"
-                    onFinish={handleAboutUsSubmit}
-                >
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                        <Form.Item
-                            label="Titre (Français)"
-                            name="title_fr"
-                            rules={[{ required: true, message: "Veuillez saisir le titre en français" }]}
-                        >
-                            <Input placeholder="Qui sommes-nous ?" />
-                        </Form.Item>
-                        <Form.Item
-                            label="Titre (Anglais)"
-                            name="title_en"
-                            rules={[{ required: true, message: "Veuillez saisir le titre en anglais" }]}
-                        >
-                            <Input placeholder="About Us" />
-                        </Form.Item>
-                    </div>
-                    <Form.Item label="Contenu (Français)">
-                        <ReactQuill
-                            theme="snow"
-                            value={frenchContent}
-                            onChange={setFrenchContent}
-                            modules={quillModules}
-                            formats={quillFormats}
-                            placeholder="Contenu en français..."
-                            style={{ height: "200px", marginBottom: "24px" }}
-                        />
-                    </Form.Item>
-                    <Form.Item label="Contenu (Anglais)">
-                        <ReactQuill
-                            theme="snow"
-                            value={englishContent}
-                            onChange={setEnglishContent}
-                            modules={quillModules}
-                            formats={quillFormats}
-                            placeholder="Contenu en anglais..."
-                            style={{ height: "200px", marginBottom: "24px" }}
-                        />
-                    </Form.Item>
-
-                    <Form.Item label="Image">
-                        <Upload {...uploadProps}>
-                            <Button icon={<UploadOutlined />} size="large">
-                                Sélectionner une image
-                            </Button>
-                        </Upload>
-                    </Form.Item>
-
-
-                    <Form.Item name="isPublished" valuePropName="checked">
-                        <Switch checkedChildren="Publié" unCheckedChildren="Brouillon" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Space>
-                            <Button type="primary" htmlType="submit" loading={aboutUsLoading}>
-                                {editingAboutUs ? "Mettre à jour" : "Créer"}
-                            </Button>
-                            <Button onClick={() => setIsModalVisible(false)}>Annuler</Button>
-                        </Space>
-                    </Form.Item>
-                </Form>
-            </Modal>
         </div>
     );
 };

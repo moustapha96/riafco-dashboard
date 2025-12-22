@@ -22,9 +22,12 @@ import { EditOutlined, PlusOutlined, GlobalOutlined, EnvironmentOutlined } from 
 import ifclService from "../../../services/ifclService"
 import { toast } from "sonner"
 import { buildImageUrl } from "../../../utils/imageUtils"
+import { useAuth } from "../../../hooks/useAuth"
 const { TextArea } = Input
 
 const IFCLDetailsAdmin = () => {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
     const { id } = useParams()
     const [memberCountry, setMemberCountry] = useState(null)
     const [criteria, setCriteria] = useState([])
@@ -217,16 +220,18 @@ const IFCLDetailsAdmin = () => {
                                             <Button key="edit" type="link" size="small" onClick={() => handleEditCriterion(criterion)}>
                                                 Modifier
                                             </Button>,
-                                            <Popconfirm
-                                                key="delete"
-                                                title="Supprimer ce critère ?"
-                                                onConfirm={() => handleDeleteCriterion(criterion.id)}
-                                            >
-                                                <Button type="link" danger size="small">
-                                                    Supprimer
-                                                </Button>
-                                            </Popconfirm>,
-                                        ]}
+                                            canDelete && (
+                                                <Popconfirm
+                                                    key="delete"
+                                                    title="Supprimer ce critère ?"
+                                                    onConfirm={() => handleDeleteCriterion(criterion.id)}
+                                                >
+                                                    <Button type="link" danger size="small">
+                                                        Supprimer
+                                                    </Button>
+                                                </Popconfirm>
+                                            ),
+                                        ].filter(Boolean)}
                                     >
                                         <List.Item.Meta
                                             title={criterion.name || "Sans nom"}

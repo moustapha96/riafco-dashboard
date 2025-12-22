@@ -27,9 +27,12 @@ import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import { Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import { useAuth } from "../../../hooks/useAuth";
 
 
 const ReportManagement = () => {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
    
     // États pour Reports
     const [reports, setReports] = useState([]);
@@ -205,14 +208,16 @@ const ReportManagement = () => {
                                                         setReportModalVisible(true);
                                                     }}
                                                 />
-                                                <Popconfirm
-                                                    title="Êtes-vous sûr de vouloir supprimer ce rapport ?"
-                                                    onConfirm={() => handleDeleteReport(record.id)}
-                                                    okText="Oui"
-                                                    cancelText="Non"
-                                                >
-                                                    <Button danger icon={<DeleteOutlined />} />
-                                                </Popconfirm>
+                                                {canDelete && (
+                                                    <Popconfirm
+                                                        title="Êtes-vous sûr de vouloir supprimer ce rapport ?"
+                                                        onConfirm={() => handleDeleteReport(record.id)}
+                                                        okText="Oui"
+                                                        cancelText="Non"
+                                                    >
+                                                        <Button danger icon={<DeleteOutlined />} />
+                                                    </Popconfirm>
+                                                )}
                                             </Space>
                                         ),
                                     },

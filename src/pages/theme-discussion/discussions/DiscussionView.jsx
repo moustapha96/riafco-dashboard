@@ -37,12 +37,17 @@ import discussionService from "../../../services/discussionService"
 import commentService from "../../../services/commentService"
 import { toast } from "sonner"
 import { BiReply } from "react-icons/bi"
+import { useAuth } from "../../../hooks/useAuth"
+import { DislikeOutlined } from "@ant-design/icons"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
 moment.locale("fr")
 
 const DiscussionView = () => {
+    const { user } = useAuth()
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN"
     const [discussion, setDiscussion] = useState(null)
     const [comments, setComments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -57,6 +62,17 @@ const DiscussionView = () => {
     const navigate = useNavigate()
     const commentRefs = useRef({})
 
+    // Fonction helper pour vérifier si un commentaire est liké par l'utilisateur actuel
+    const isCommentLiked = (comment) => {
+        if (!user || !comment.likes) return false
+        // Vérifier si l'utilisateur actuel est dans la liste des likes
+        return comment.likes.some((like) => {
+            // Support pour différentes structures de données
+            const likeUserId = like.user?.id || like.userId || like.user
+            return likeUserId === user.id
+        })
+    }
+
     useEffect(() => {
         if (discussionId) {
             loadDiscussionData().then(() => {
@@ -68,10 +84,27 @@ const DiscussionView = () => {
         }
     }, [discussionId])
 
-    const loadDiscussionData = async () => {
+    // Rafraîchissement automatique toutes les 3 secondes (silencieux)
+    useEffect(() => {
+        if (!discussionId) return
+
+        const intervalId = setInterval(() => {
+            // Rafraîchissement silencieux sans afficher de chargement
+            loadDiscussionData(true)
+        }, 3000) // 3 secondes
+
+        // Nettoyer l'intervalle lors du démontage du composant
+        return () => {
+            clearInterval(intervalId)
+        }
+    }, [discussionId])
+
+    const loadDiscussionData = async (silent = false) => {
         try {
-            setLoading(true)
-            setError(null)
+            if (!silent) {
+                setLoading(true)
+                setError(null)
+            }
             const discussionResponse = await discussionService.getById(discussionId)
             setDiscussion(discussionResponse.data)
 
@@ -79,9 +112,13 @@ const DiscussionView = () => {
             setComments(commentsResponse.data || [])
         } catch (err) {
             console.error("Erreur lors du chargement:", err)
-            setError("Erreur lors du chargement des données")
+            if (!silent) {
+                setError("Erreur lors du chargement des données")
+            }
         } finally {
-            setLoading(false)
+            if (!silent) {
+                setLoading(false)
+            }
         }
     }
 
@@ -156,11 +193,24 @@ const DiscussionView = () => {
 
     const handleLikeComment = async (commentId) => {
         try {
+            // Trouver le commentaire pour vérifier s'il est déjà liké
+            let comment = comments.find((c) => c.id === commentId)
+            if (!comment) {
+                // Chercher dans les replies
+                for (const c of comments) {
+                    if (c.replies) {
+                        comment = c.replies.find((r) => r.id === commentId)
+                        if (comment) break
+                    }
+                }
+            }
+            const isLiked = comment ? isCommentLiked(comment) : false
+            
             await commentService.likeComment(discussionId, commentId)
-            message.success("Like ajouté avec succès")
-            await loadDiscussionData()
+            message.success(isLiked ? "Je n'aime plus" : "J'aime")
+            await loadDiscussionData(true) // Rafraîchissement silencieux
         } catch (err) {
-            message.error("Erreur lors du like")
+            message.error("Erreur lors du like/unlike")
             console.error("Erreur lors du like:", err)
         }
     }
@@ -197,51 +247,62 @@ const DiscussionView = () => {
         })
     }
 
-    const getCommentActions = (comment) => [
-        {
-            key: "reply",
-            label: "Répondre",
-            icon: <CommentOutlined />,
-            onClick: () => handleReplyToComment(comment.id),
-        },
-        {
-            key: "like",
-            label: "J'aime",
-            icon: <LikeOutlined />,
-            onClick: () => handleLikeComment(comment.id),
-        },
-        {
-            type: "divider",
-        },
-        {
-            key: "edit",
-            label: "Modifier",
-            icon: <EditOutlined />,
-            onClick: () => handleEditComment(comment.id, comment.content),
-        },
-        {
-            key: "delete",
-            label: "Supprimer",
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: () => handleDeleteComment(comment.id),
-        },
-    ]
+    const getCommentActions = (comment) => {
+        const isLiked = isCommentLiked(comment)
+        const actions = [
+            {
+                key: "reply",
+                label: "Répondre",
+                icon: <CommentOutlined />,
+                onClick: () => handleReplyToComment(comment.id),
+            },
+            {
+                key: "like",
+                label: isLiked ? "Je n'aime plus" : "J'aime",
+                icon: isLiked ? <DislikeOutlined /> : <LikeOutlined />,
+                onClick: () => handleLikeComment(comment.id),
+            },
+        ]
+        
+        if (canDelete) {
+            actions.push(
+                { type: "divider" },
+                {
+                    key: "edit",
+                    label: "Modifier",
+                    icon: <EditOutlined />,
+                    onClick: () => handleEditComment(comment.id, comment.content),
+                },
+                {
+                    key: "delete",
+                    label: "Supprimer",
+                    icon: <DeleteOutlined />,
+                    danger: true,
+                    onClick: () => handleDeleteComment(comment.id),
+                }
+            )
+        }
+        
+        return actions
+    }
 
-    const getReplyActions = (reply) => [
-        {
-            key: "reply",
-            label: "Répondre",
-            icon: <BiReply />,
-            onClick: () => handleReplyToReply(reply),
-        },
-        {
-            key: "like",
-            label: "J'aime",
-            icon: <LikeOutlined />,
-            onClick: () => handleLikeComment(reply.id),
-        },
-    ]
+    const getReplyActions = (reply) => {
+        const isLiked = isCommentLiked(reply)
+        return [
+            {
+                key: "reply",
+                label: "Répondre",
+                icon: <BiReply />,
+                onClick: () => handleReplyToReply(reply),
+            },
+            {
+                key: "like",
+                label: isLiked ? "Je n'aime plus" : "J'aime",
+                icon: isLiked ? <DislikeOutlined /> : <LikeOutlined />,
+                onClick: () => handleLikeComment(reply.id),
+            },
+        ]
+    }
 
     if (loading) {
         return (
@@ -278,7 +339,39 @@ const DiscussionView = () => {
                     paddingRight: "8px",
                 }}
             >
-                {/* ... (le reste de votre code pour l'affichage de la discussion) ... */}
+                {/* En-tête avec titre et thème */}
+                <Card style={{ marginBottom: "24px" }}>
+                    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                        <div>
+                            <Title level={2} style={{ margin: 0, marginBottom: "8px" }}>
+                                {discussion.title}
+                            </Title>
+                            {discussion.theme && (
+                                <Space>
+                                    <Text type="secondary">Thème :</Text>
+                                    <Tag color="blue" style={{ fontSize: "14px", padding: "4px 12px" }}>
+                                        {discussion.theme.title}
+                                    </Tag>
+                                </Space>
+                            )}
+                        </div>
+                        {discussion.content && (
+                            <Paragraph style={{ margin: 0, fontSize: "15px", color: "#595959" }}>
+                                {discussion.content}
+                            </Paragraph>
+                        )}
+                        <div>
+                            <Space>
+                                <Text type="secondary" style={{ fontSize: "13px" }}>
+                                    Par {discussion.createdBy?.firstName} {discussion.createdBy?.lastName}
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: "13px" }}>
+                                    • {moment(discussion.createdAt).format("DD/MM/YYYY à HH:mm")}
+                                </Text>
+                            </Space>
+                        </div>
+                    </Space>
+                </Card>
 
                 <Card title={`Commentaires (${comments.length})`}>
                     {comments.length === 0 ? (
@@ -293,7 +386,7 @@ const DiscussionView = () => {
                                     ref={(el) => (commentRefs.current[comment.id] = el)}
                                 >
                                     <List.Item.Meta
-                                        avatar={<Avatar icon={<UserOutlined />} src={comment.createdBy?.profilePic} />}
+                                        avatar={<Avatar icon={<UserOutlined />} src={ buildImageUrl(comment.createdBy?.profilePic) } />}
                                         title={
                                             <Row justify="space-between" align="middle">
                                                 <Col>
@@ -310,10 +403,11 @@ const DiscussionView = () => {
                                                 <Col>
                                                     <Space>
                                                         <Button
-                                                            type="text"
+                                                            type={isCommentLiked(comment) ? "primary" : "text"}
                                                             size="small"
-                                                            icon={<LikeOutlined />}
+                                                            icon={isCommentLiked(comment) ? <LikeOutlined /> : <LikeOutlined />}
                                                             onClick={() => handleLikeComment(comment.id)}
+                                                            style={isCommentLiked(comment) ? { color: "#1890ff" } : {}}
                                                         >
                                                             {comment._count?.likes || 0}
                                                         </Button>
@@ -432,11 +526,14 @@ const DiscussionView = () => {
                                                                                 <Col>
                                                                                     <Space size="small">
                                                                                         <Button
-                                                                                            type="text"
+                                                                                            type={isCommentLiked(reply) ? "primary" : "text"}
                                                                                             size="small"
                                                                                             icon={<LikeOutlined />}
                                                                                             onClick={() => handleLikeComment(reply.id)}
-                                                                                            style={{ fontSize: "12px" }}
+                                                                                            style={{ 
+                                                                                                fontSize: "12px",
+                                                                                                ...(isCommentLiked(reply) ? { color: "#1890ff" } : {})
+                                                                                            }}
                                                                                         >
                                                                                             {reply._count?.likes || 0}
                                                                                         </Button>

@@ -1,42 +1,87 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import moment from "moment";
 import { toast } from "sonner";
-import { Table, Tag, Space, Button, Modal, Form, Input, message, Typography, Card, Spin, Breadcrumb, Select } from "antd";
+import { Table, Tag, Space, Button, Modal, Form, Input, message, Typography, Card, Spin, Breadcrumb, Select, Row, Col } from "antd";
 import { Link, useNavigate } from "react-router-dom";
+import { SearchOutlined } from "@ant-design/icons";
 import newsletterService from "../../../services/newsletterService";
 import { Option } from "antd/es/mentions";
+import { useAuth } from "../../../hooks/useAuth";
 
 const { Text } = Typography;
 
 export default function NewsletterSubscribersManagement() {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
     const [subscribers, setSubscribers] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [form] = Form.useForm();
     const [editingSubscriber, setEditingSubscriber] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [search, setSearch] = useState("");
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+        total: 0,
+    });
     const navigate = useNavigate();
 
     // Charger les abonnés depuis l'API
-    const fetchSubscribers = async () => {
+    const fetchSubscribers = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await newsletterService.getAll();
+            const params = {
+                page: pagination.current,
+                limit: pagination.pageSize,
+                ...(search && { search }),
+            };
+            const response = await newsletterService.getAll(params);
             console.log(response)
-            setSubscribers(response.newsletters);
+            setSubscribers(response.newsletters || []);
+            setPagination(prev => ({
+                ...prev,
+                total: response.pagination?.total || 0,
+            }));
         } catch (error) {
             console.error("Erreur lors du chargement des abonnés:", error);
-            message.error("Erreur lors du chargement des abonnés");
+            const errorMessage = error?.message || error?.code || "Erreur lors du chargement des abonnés";
+            
+            // Si l'erreur est liée à l'authentification, l'intercepteur axios devrait gérer la redirection
+            if (error?.code === "NO_TOKEN" || error?.code === "TOKEN_EXPIRED" || error?.code === "INVALID_TOKEN") {
+                message.error("Session expirée. Veuillez vous reconnecter.");
+                // L'intercepteur axios devrait déjà rediriger vers /auth/login
+            } else {
+                message.error(errorMessage);
+            }
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.current, pagination.pageSize, search]);
 
     useEffect(() => {
         document.documentElement.setAttribute("dir", "ltr");
         document.documentElement.classList.add("light");
         document.documentElement.classList.remove("dark");
         fetchSubscribers();
-    }, []);
+    }, [fetchSubscribers]);
+
+    // Gestion du changement de recherche
+    const handleSearchChange = (value) => {
+        setSearch(value);
+        setPagination(prev => ({
+            ...prev,
+            current: 1, // Réinitialiser à la première page lors de la recherche
+        }));
+    };
+
+    // Gestion du changement de pagination
+    const handlePaginationChange = (page, pageSize) => {
+        setPagination(prev => ({
+            ...prev,
+            current: page,
+            pageSize: pageSize,
+        }));
+    };
 
     const handleOpenModal = (subscriber = null) => {
         setEditingSubscriber(subscriber);
@@ -67,7 +112,7 @@ export default function NewsletterSubscribersManagement() {
                 await newsletterService.update(editingSubscriber.id, subscriberData);
                 toast.success("Abonné mis à jour avec succès");
             } else {
-                await newsletterService.createSubscriber(subscriberData);
+                await newsletterService.create(subscriberData);
                 toast.success("Abonné ajouté avec succès");
             }
             setModalVisible(false);
@@ -81,7 +126,7 @@ export default function NewsletterSubscribersManagement() {
     // Supprimer un abonné
     const handleDeleteSubscriber = async (subscriberId) => {
         try {
-            await newsletterService.deleteSubscriber(subscriberId);
+            await newsletterService.delete(subscriberId);
             toast.success("Abonné supprimé avec succès");
             fetchSubscribers();
         } catch (error) {
@@ -137,14 +182,16 @@ export default function NewsletterSubscribersManagement() {
                     >
                         Modifier
                     </Button>
-                    <Button
-                        type="dashed"
-                        danger
-                        size="small"
-                        onClick={() => handleDeleteSubscriber(record.id)}
-                    >
-                        Supprimer
-                    </Button>
+                    {canDelete && (
+                        <Button
+                            type="dashed"
+                            danger
+                            size="small"
+                            onClick={() => handleDeleteSubscriber(record.id)}
+                        >
+                            Supprimer
+                        </Button>
+                    )}
                 </Space>
             ),
         },
@@ -164,16 +211,22 @@ export default function NewsletterSubscribersManagement() {
                         ]}
                     />
                 </div>
-                {/* <div className="md:flex md:justify-end justify-end items-center mb-6">
-                   
-                    <Button
-                        type="primary"
-                        onClick={() => handleOpenModal()}
-                        icon={<PiUserPlusDuotone />}
-                    >
-                        Ajouter un Abonné
-                    </Button>
-                </div> */}
+
+                {/* Barre de recherche */}
+                <Card className="mb-6">
+                    <Row gutter={[16, 16]} align="middle">
+                        <Col xs={24} sm={12} md={8}>
+                            <Input
+                                placeholder="Rechercher par email, prénom ou nom..."
+                                prefix={<SearchOutlined />}
+                                value={search}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                allowClear
+                                size="large"
+                            />
+                        </Col>
+                    </Row>
+                </Card>
 
                 {loading && <>
                     <div className="flex items-center justify-center min-h-screen">
@@ -187,7 +240,18 @@ export default function NewsletterSubscribersManagement() {
                             columns={columns}
                             dataSource={subscribers}
                             rowKey="id"
-                            pagination={{ pageSize: 10 }}
+                            pagination={{
+                                current: pagination.current,
+                                pageSize: pagination.pageSize,
+                                total: pagination.total,
+                                onChange: handlePaginationChange,
+                                onShowSizeChange: handlePaginationChange,
+                                showSizeChanger: true,
+                                showQuickJumper: true,
+                                showTotal: (total, range) =>
+                                    `${range[0]}-${range[1]} sur ${total} abonnés`,
+                                pageSizeOptions: ["10", "20", "50", "100"],
+                            }}
                             scroll={{ x: true }}
                         />
                     </Card>
@@ -244,7 +308,7 @@ export default function NewsletterSubscribersManagement() {
                                 <Button onClick={() => setModalVisible(false)}>
                                     Annuler
                                 </Button>
-                                {editingSubscriber && (
+                                {editingSubscriber && canDelete && (
                                     <Button
                                         danger
                                         onClick={() => handleDeleteSubscriber(editingSubscriber.id)}

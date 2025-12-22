@@ -6,11 +6,14 @@ import { Table, Tag, Space, Avatar, Breadcrumb, Button, Input, Select, message, 
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, GlobalOutlined } from "@ant-design/icons"
 import ifclService from "../../../services/ifclService"
 import { buildImageUrl } from "../../../utils/imageUtils"
+import { useAuth } from "../../../hooks/useAuth"
 
 const { Search } = Input
 const { Option } = Select
 
 const IFCLListAdmin = () => {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
     const [ifcls, setIfcls] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
@@ -155,16 +158,18 @@ const IFCLListAdmin = () => {
                     <Button type="link" icon={<EditOutlined />} size="small">
                         <Link to={`/admin/ifcl/${record.id}/edit`}>Modifier</Link>
                     </Button>
-                    <Popconfirm
-                        title="Êtes-vous sûr de vouloir supprimer ce pays membre ?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Oui"
-                        cancelText="Non"
-                    >
-                        <Button type="link" danger icon={<DeleteOutlined />} size="small">
-                            Supprimer
-                        </Button>
-                    </Popconfirm>
+                    {canDelete && (
+                        <Popconfirm
+                            title="Êtes-vous sûr de vouloir supprimer ce pays membre ?"
+                            onConfirm={() => handleDelete(record.id)}
+                            okText="Oui"
+                            cancelText="Non"
+                        >
+                            <Button type="link" danger icon={<DeleteOutlined />} size="small">
+                                Supprimer
+                            </Button>
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
         },

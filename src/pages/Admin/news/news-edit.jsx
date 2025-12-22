@@ -360,6 +360,22 @@ const NewsEdit = () => {
     }
   }, [id, isEdit])
 
+  // Nettoyer les URLs de prévisualisation lors du démontage
+  useEffect(() => {
+    return () => {
+      fileList.forEach(file => {
+        if (file.url && file.url.startsWith('blob:')) {
+          URL.revokeObjectURL(file.url)
+        }
+      })
+      galleryList.forEach(file => {
+        if (file.url && file.url.startsWith('blob:')) {
+          URL.revokeObjectURL(file.url)
+        }
+      })
+    }
+  }, [fileList, galleryList])
+
   const fetchNews = async () => {
     try {
       setLoading(true)
@@ -369,7 +385,7 @@ const NewsEdit = () => {
       form.setFieldsValue({
         title_fr: newsData.title_fr,
         title_en: newsData.title_en,
-        status: newsData.status,
+        status: newsData.status || "DRAFT", // Valeur par défaut si null
       })
 
       setContentFr(newsData.content_fr)
@@ -421,12 +437,17 @@ const NewsEdit = () => {
       formData.append("content_en", content_en)
       formData.append("status", values.status || "DRAFT")
 
-      // Image de couverture
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        formData.append("image", fileList[0].originFileObj)
+      // Ajouter l'image de couverture si c'est un nouveau fichier
+      if (fileList.length > 0) {
+        if (fileList[0].originFileObj) {
+          formData.append("image", fileList[0].originFileObj)
+        } else if (fileList[0].url && !fileList[0].url.startsWith('blob:')) {
+          // Si c'est une image existante, on ne l'envoie pas (elle est déjà sur le serveur)
+          // Le backend gardera l'image existante si aucun nouveau fichier n'est envoyé
+        }
       }
 
-      // Galerie
+      // Ajouter les images de la galerie (seulement les nouveaux fichiers)
       galleryList.forEach((file) => {
         if (file.originFileObj) {
           formData.append("galleries", file.originFileObj)
@@ -441,6 +462,17 @@ const NewsEdit = () => {
         toast.success("News créée avec succès")
       }
 
+      // Nettoyer les URLs de prévisualisation
+      fileList.forEach(file => {
+        if (file.url && file.url.startsWith('blob:')) {
+          URL.revokeObjectURL(file.url)
+        }
+      })
+      galleryList.forEach(file => {
+        if (file.url && file.url.startsWith('blob:')) {
+          URL.revokeObjectURL(file.url)
+        }
+      })
       navigate("/admin/news")
     } catch (error) {
       console.log(error)
@@ -452,28 +484,36 @@ const NewsEdit = () => {
 
   // Gestion du changement d'image de couverture + preview
   const handleCoverChange = ({ fileList: newFileList }) => {
-    setFileList(newFileList)
+    // Créer des URLs de prévisualisation pour les nouveaux fichiers
+    const updatedFileList = newFileList.map(file => {
+      if (file.originFileObj && !file.url && !file.thumbUrl) {
+        file.url = URL.createObjectURL(file.originFileObj)
+        file.thumbUrl = file.url
+      }
+      return file
+    })
+    setFileList(updatedFileList)
 
-    if (newFileList.length === 0) {
+    if (updatedFileList.length === 0) {
       setCoverPreview(null)
       return
     }
 
-    const file = newFileList[0]
-
-    if (file.originFileObj) {
-      // Nouveau fichier choisi → blob URL
-      const previewUrl = URL.createObjectURL(file.originFileObj)
-      setCoverPreview(previewUrl)
-    } else if (file.url || file.thumbUrl) {
-      // Cas d'une image déjà existante (backend)
-      setCoverPreview(file.url || file.thumbUrl)
-    }
+    const file = updatedFileList[0]
+    setCoverPreview(file.url || file.thumbUrl || null)
   }
 
-  // Gestion des images de galerie (optionnel, on laisse simple)
+  // Gestion des images de galerie
   const handleGalleryChange = ({ fileList: newFileList }) => {
-    setGalleryList(newFileList)
+    // Créer des URLs de prévisualisation pour les nouveaux fichiers
+    const updatedFileList = newFileList.map(file => {
+      if (file.originFileObj && !file.url && !file.thumbUrl) {
+        file.url = URL.createObjectURL(file.originFileObj)
+        file.thumbUrl = file.url
+      }
+      return file
+    })
+    setGalleryList(updatedFileList)
   }
 
   const uploadProps = {
@@ -482,6 +522,15 @@ const NewsEdit = () => {
     beforeUpload: () => false,
     maxCount: 1,
     accept: "image/*",
+    onRemove: (file) => {
+      // Nettoyer l'URL de prévisualisation si c'est un nouveau fichier
+      if (file.url && file.url.startsWith('blob:')) {
+        URL.revokeObjectURL(file.url)
+      }
+      if (fileList.length === 1) {
+        setCoverPreview(null)
+      }
+    }
   }
 
   const galleryUploadProps = {
@@ -490,6 +539,13 @@ const NewsEdit = () => {
     beforeUpload: () => false,
     multiple: true,
     accept: "image/*",
+    maxCount: 10,
+    onRemove: (file) => {
+      // Nettoyer l'URL de prévisualisation si c'est un nouveau fichier
+      if (file.url && file.url.startsWith('blob:')) {
+        URL.revokeObjectURL(file.url)
+      }
+    }
   }
 
   if (loading) {
@@ -610,11 +666,9 @@ const NewsEdit = () => {
                 {/* Image de couverture */}
                 <Form.Item label="Image de couverture">
                   <Upload {...uploadProps}>
-                    {fileList.length < 1 && (
-                      <Button icon={<UploadOutlined />} size="large">
-                        Sélectionner une image
-                      </Button>
-                    )}
+                    <Button icon={<UploadOutlined />} size="large">
+                      {fileList.length > 0 ? "Remplacer l'image" : "Sélectionner une image"}
+                    </Button>
                   </Upload>
 
                   {coverPreview && (
@@ -662,19 +716,23 @@ const NewsEdit = () => {
                   </Upload>
                   {galleryList.length > 0 && (
                     <Row gutter={[8, 8]} style={{ marginTop: "8px" }}>
-                      {galleryList.map((file, index) => (
-                        <Col key={index}>
-                          <img
-                            src={file.url || file.thumbUrl}
-                            alt={`Gallery ${index}`}
-                            style={{
-                              width: "100px",
-                              height: "100px",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </Col>
-                      ))}
+                      {galleryList.map((file, index) => {
+                        const imageUrl = file.url || file.thumbUrl
+                        return imageUrl ? (
+                          <Col key={file.uid || index}>
+                            <img
+                              src={imageUrl}
+                              alt={`Gallery ${index}`}
+                              style={{
+                                width: "100px",
+                                height: "100px",
+                                objectFit: "cover",
+                                borderRadius: "4px",
+                              }}
+                            />
+                          </Col>
+                        ) : null
+                      })}
                     </Row>
                   )}
                 </Form.Item>

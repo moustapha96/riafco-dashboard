@@ -7,12 +7,15 @@ import dayjs from "dayjs";
 import { Table, Tag, Space, Button, Modal, Form, Input, DatePicker, message, Typography, Card, Spin, Switch, InputNumber, Breadcrumb } from "antd";
 import { BiCalendar } from "react-icons/bi";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
 
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 export default function EventManagement() {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
     const [events, setEvents] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [form] = Form.useForm();
@@ -170,14 +173,16 @@ export default function EventManagement() {
                     >
                         Modifier
                     </Button>
-                    <Button
-                        type="dashed"
-                        danger
-                        size="small"
-                        onClick={() => handleDeleteEvent(record.id)}
-                    >
-                        Supprimer
-                    </Button>
+                    {canDelete && (
+                        <Button
+                            type="dashed"
+                            danger
+                            size="small"
+                            onClick={() => handleDeleteEvent(record.id)}
+                        >
+                            Supprimer
+                        </Button>
+                    )}
                 </Space>
             ),
         },
@@ -330,7 +335,7 @@ export default function EventManagement() {
                                 <Button onClick={() => setModalVisible(false)}>
                                     Annuler
                                 </Button>
-                                {editingEvent && (
+                                {editingEvent && canDelete && (
                                     <Button
                                         danger
                                         onClick={() => handleDeleteEvent(editingEvent.id)}

@@ -20,12 +20,24 @@ const PartnerEdit = () => {
     const [loading, setLoading] = useState(false)
     const [initialLoading, setInitialLoading] = useState(isEditing)
     const [partner, setPartner] = useState(null)
+    const [fileList, setFileList] = useState([])
 
     useEffect(() => {
         if (isEditing) {
             fetchPartner()
         }
     }, [id])
+
+    // Nettoyer les URLs blob lors du démontage
+    useEffect(() => {
+        return () => {
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+        }
+    }, [fileList])
 
     const fetchPartner = async () => {
         setInitialLoading(true)
@@ -43,6 +55,22 @@ const PartnerEdit = () => {
                 phone: partnerData.phone,
                 website: partnerData.website,
             })
+
+            // Préparer la liste des fichiers pour l'image existante
+            if (partnerData.logo) {
+                const logoUrl = buildImageUrl(partnerData.logo)
+                setFileList([
+                    {
+                        uid: '-1',
+                        name: 'logo-actuel.png',
+                        status: 'done',
+                        url: logoUrl,
+                        thumbUrl: logoUrl, // Nécessaire pour l'affichage dans picture-card
+                    },
+                ])
+            } else {
+                setFileList([])
+            }
         } catch (error) {
             console.log(error)
             toast.error("Erreur lors du chargement du partenaire")
@@ -59,14 +87,16 @@ const PartnerEdit = () => {
             const formData = new FormData()
 
             Object.keys(values).forEach((key) => {
-                if (values[key] !== undefined && values[key] !== null) {
-                    if (key === "logo" && values[key]?.file) {
-                        formData.append("logo", values[key].file)
-                    } else if (key !== "logo") {
-                        formData.append(key, values[key])
-                    }
+                if (values[key] !== undefined && values[key] !== null && key !== "logo") {
+                    formData.append(key, values[key])
                 }
             })
+
+            // Gérer l'image : utiliser originFileObj pour les nouveaux fichiers
+            if (fileList.length > 0 && fileList[0].originFileObj) {
+                formData.append("logo", fileList[0].originFileObj)
+            }
+
             console.log(formData)
 
             if (isEditing) {
@@ -77,6 +107,13 @@ const PartnerEdit = () => {
                 toast.success("Partenaire créé avec succès")
             }
 
+            // Nettoyer les URLs blob
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+
             navigate("/admin/partners")
         } catch (error) {
             console.log(error)
@@ -86,10 +123,44 @@ const PartnerEdit = () => {
         }
     }
 
+    const handleLogoChange = ({ fileList: newFileList }) => {
+        const updatedFileList = newFileList.map((file) => {
+            if (file.originFileObj) {
+                // Nouveau fichier sélectionné
+                const blobUrl = URL.createObjectURL(file.originFileObj)
+                return {
+                    ...file,
+                    url: blobUrl,
+                    thumbUrl: blobUrl, // Nécessaire pour l'affichage dans picture-card
+                }
+            }
+            // Pour les fichiers existants, s'assurer que thumbUrl est défini
+            if (file.url && !file.thumbUrl) {
+                return {
+                    ...file,
+                    thumbUrl: file.url,
+                }
+            }
+            return file
+        })
+        setFileList(updatedFileList)
+    }
+
+    const handleLogoRemove = (file) => {
+        if (file.url && file.url.startsWith('blob:')) {
+            URL.revokeObjectURL(file.url)
+        }
+        return true
+    }
+
     const uploadProps = {
         beforeUpload: () => false,
         maxCount: 1,
         accept: "image/*",
+        fileList,
+        onChange: handleLogoChange,
+        onRemove: handleLogoRemove,
+        listType: "picture-card",
         showUploadList: {
             showPreviewIcon: true,
             showRemoveIcon: true,
@@ -203,19 +274,13 @@ const PartnerEdit = () => {
                                 <Col span={12}>
                                     <Form.Item name="logo" label="Logo">
                                         <Upload {...uploadProps}>
-                                            <Button icon={<UploadOutlined />} size="large">
-                                                Sélectionner le logo
-                                            </Button>
+                                            {fileList.length < 1 && (
+                                                <div>
+                                                    <UploadOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
+                                                    <div style={{ marginTop: 8 }}>Sélectionner le logo</div>
+                                                </div>
+                                            )}
                                         </Upload>
-                                        {isEditing && partner?.logo && (
-                                            <div style={{ marginTop: "8px" }}>
-                                                <img
-                                                    src={buildImageUrl(partner.logo) || "/placeholder.svg"}
-                                                    alt="Logo actuel"
-                                                    style={{ maxWidth: "100px", maxHeight: "100px" }}
-                                                />
-                                            </div>
-                                        )}
                                     </Form.Item>
                                 </Col>
                             </Row>

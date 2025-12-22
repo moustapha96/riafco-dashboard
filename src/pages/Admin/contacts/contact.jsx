@@ -33,6 +33,7 @@ const { Title, Text } = Typography
 
 const ContactManagement = () => {
     const { user } = useAuth()
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN"
 
     const [contacts, setContacts] = useState([])
     const [loading, setLoading] = useState(false)
@@ -207,7 +208,7 @@ const ContactManagement = () => {
                         <Option value="RESOLVED">Résolu</Option>
                         <Option value="CLOSED">Fermé</Option>
                     </Select>
-                    {user && user.role === "SUPER_ADMIN" && (
+                    {canDelete && (
                         <Popconfirm
                             title="Êtes-vous sûr de vouloir supprimer ce contact ?"
                             onConfirm={() => handleDelete(record.id)}

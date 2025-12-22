@@ -8,11 +8,14 @@ import {
     Table, Tag, Space, Button, Modal, Form, Input, DatePicker,
     message, Typography, Card, Spin, Select
 } from "antd";
+import { useAuth } from "../../../hooks/useAuth";
 
 const { Title } = Typography;
 const { Option } = Select;
 
 export default function CampaignsManagement() {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
     const [campaigns, setCampaigns] = useState([]);
     const [newsOptions, setNewsOptions] = useState([]);
     const [selectedNewsId, setSelectedNewsId] = useState(null);
@@ -152,7 +155,9 @@ export default function CampaignsManagement() {
             key: "actions",
             render: (_, record) => (
                 <Space size="middle">
-                    <Button type="dashed" danger size="small" onClick={() => handleDeleteCampaign(record.id)}>Supprimer</Button>
+                    {canDelete && (
+                        <Button type="dashed" danger size="small" onClick={() => handleDeleteCampaign(record.id)}>Supprimer</Button>
+                    )}
                 </Space>
             ),
         },
@@ -267,7 +272,7 @@ export default function CampaignsManagement() {
                                     {editingCampaign ? "Mettre à Jour" : "Créer"}
                                 </Button>
                                 <Button onClick={handleCloseModal}>Annuler</Button>
-                                {editingCampaign && (
+                                {editingCampaign && canDelete && (
                                     <Button danger onClick={() => handleDeleteCampaign(editingCampaign.id)}>
                                         Supprimer
                                     </Button>

@@ -32,11 +32,14 @@ import { Link, useNavigate } from "react-router-dom"
 import partnerService from "../../../services/partnerService"
 import moment from "moment"
 import { toast } from "sonner"
+import { buildImageUrl } from "../../../utils/imageUtils"
+import { useAuth } from "../../../hooks/useAuth"
 
 const { Title, Text } = Typography
 const { TextArea } = Input
 
 const PartnerManagement = () => {
+    const { user } = useAuth()
     const navigate = useNavigate()
     const [partners, setPartners] = useState([])
     const [loading, setLoading] = useState(false)
@@ -48,10 +51,25 @@ const PartnerManagement = () => {
         pageSize: 10,
         total: 0,
     })
+    const [fileList, setFileList] = useState([])
+
+    // Vérifier si l'utilisateur peut supprimer (admin ou super admin)
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN"
 
     useEffect(() => {
         fetchPartners()
     }, [pagination.current, pagination.pageSize])
+
+    // Nettoyer les URLs blob lors du démontage
+    useEffect(() => {
+        return () => {
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+        }
+    }, [fileList])
 
     const fetchPartners = async () => {
         setLoading(true)
@@ -74,6 +92,7 @@ const PartnerManagement = () => {
     const handleAdd = () => {
         setEditingPartner(null)
         form.resetFields()
+        setFileList([])
         setModalVisible(true)
     }
 
@@ -88,6 +107,23 @@ const PartnerManagement = () => {
             phone: partner.phone,
             website: partner.website,
         })
+        
+        // Préparer la liste des fichiers pour l'image existante
+        if (partner.logo) {
+            const logoUrl = buildImageUrl(partner.logo)
+            setFileList([
+                {
+                    uid: '-1',
+                    name: 'logo-actuel.png',
+                    status: 'done',
+                    url: logoUrl,
+                    thumbUrl: logoUrl, // Nécessaire pour l'affichage dans picture-card
+                },
+            ])
+        } else {
+            setFileList([])
+        }
+        
         setModalVisible(true)
     }
 
@@ -107,14 +143,15 @@ const PartnerManagement = () => {
         try {
             const formData = new FormData()
             Object.keys(values).forEach((key) => {
-                if (values[key] !== undefined && values[key] !== null) {
-                    if (key === "logo" && values[key]?.file) {
-                        formData.append("logo", values[key].file)
-                    } else if (key !== "logo") {
-                        formData.append(key, values[key])
-                    }
+                if (values[key] !== undefined && values[key] !== null && key !== "logo") {
+                    formData.append(key, values[key])
                 }
             })
+
+            // Gérer l'image : utiliser originFileObj pour les nouveaux fichiers
+            if (fileList.length > 0 && fileList[0].originFileObj) {
+                formData.append("logo", fileList[0].originFileObj)
+            }
 
             if (editingPartner) {
                 await partnerService.update(editingPartner.id, formData)
@@ -124,8 +161,16 @@ const PartnerManagement = () => {
                 toast.success("Partenaire créé avec succès")
             }
 
+            // Nettoyer les URLs blob
+            fileList.forEach((file) => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+
             setModalVisible(false)
             form.resetFields()
+            setFileList([])
             fetchPartners()
         } catch (error) {
             console.log(error)
@@ -144,9 +189,8 @@ const PartnerManagement = () => {
             key: "logo",
             width: 80,
             render: (logo, record) => (
-                <Avatar size={50} src={logo} style={{ backgroundColor: "#e28743" }}>
+                <Avatar size={50} src={buildImageUrl(logo)} style={{ backgroundColor: "#e28743" }}>
                     {record.name.charAt(0).toUpperCase()}
-
                 </Avatar>
             ),
         },
@@ -217,23 +261,59 @@ const PartnerManagement = () => {
                         Détails
                     </Button>
                     <Button icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
-                    <Popconfirm
-                        title="Êtes-vous sûr de vouloir supprimer ce partenaire ?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Oui"
-                        cancelText="Non"
-                    >
-                        <Button danger icon={<DeleteOutlined />} size="small" />
-                    </Popconfirm>
+                    {canDelete && (
+                        <Popconfirm
+                            title="Êtes-vous sûr de vouloir supprimer ce partenaire ?"
+                            onConfirm={() => handleDelete(record.id)}
+                            okText="Oui"
+                            cancelText="Non"
+                        >
+                            <Button danger icon={<DeleteOutlined />} size="small" />
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
         },
     ]
 
+    const handleLogoChange = ({ fileList: newFileList }) => {
+        const updatedFileList = newFileList.map((file) => {
+            if (file.originFileObj) {
+                // Nouveau fichier sélectionné
+                const blobUrl = URL.createObjectURL(file.originFileObj)
+                return {
+                    ...file,
+                    url: blobUrl,
+                    thumbUrl: blobUrl, // Nécessaire pour l'affichage dans picture-card
+                }
+            }
+            // Pour les fichiers existants, s'assurer que thumbUrl est défini
+            if (file.url && !file.thumbUrl) {
+                return {
+                    ...file,
+                    thumbUrl: file.url,
+                }
+            }
+            return file
+        })
+        setFileList(updatedFileList)
+    }
+
+    const handleLogoRemove = (file) => {
+        if (file.url && file.url.startsWith('blob:')) {
+            URL.revokeObjectURL(file.url)
+        }
+        return true
+    }
+
     const uploadProps = {
         beforeUpload: () => false,
         maxCount: 1,
         accept: "image/*",
+        fileList,
+        onChange: handleLogoChange,
+        onRemove: handleLogoRemove,
+        listType: "picture-card",
     }
 
     return <>
@@ -296,8 +376,15 @@ const PartnerManagement = () => {
                         title={editingPartner ? "Modifier le Partenaire" : "Ajouter un Partenaire"}
                         open={modalVisible}
                         onCancel={() => {
+                            // Nettoyer les URLs blob
+                            fileList.forEach((file) => {
+                                if (file.url && file.url.startsWith('blob:')) {
+                                    URL.revokeObjectURL(file.url)
+                                }
+                            })
                             setModalVisible(false)
                             form.resetFields()
+                            setFileList([])
                         }}
                         footer={null}
                         width={800}
@@ -361,7 +448,12 @@ const PartnerManagement = () => {
                                 <Col span={12}>
                                     <Form.Item name="logo" label="Logo">
                                         <Upload {...uploadProps}>
-                                            <Button icon={<UploadOutlined />}>Sélectionner le logo</Button>
+                                            {fileList.length < 1 && (
+                                                <div>
+                                                    <UploadOutlined style={{ fontSize: "24px", color: "#1890ff" }} />
+                                                    <div style={{ marginTop: 8 }}>Sélectionner le logo</div>
+                                                </div>
+                                            )}
                                         </Upload>
                                     </Form.Item>
                                 </Col>

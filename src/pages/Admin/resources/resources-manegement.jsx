@@ -48,6 +48,7 @@ const { TabPane } = Tabs;
 
 const ResourcesManagement = () => {
   const { user, isAuthenticated } = useAuth();
+  const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const navigate = useNavigate();
 
   // States for resources
@@ -455,16 +456,18 @@ const ResourcesManagement = () => {
                 >
                   Modifier
                 </Button>
-                <Popconfirm
-                  title="Êtes-vous sûr de vouloir supprimer cette ressource ?"
-                  onConfirm={() => handleDeleteResource(record.id)}
-                  okText="Oui"
-                  cancelText="Non"
-                >
-                  <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-                    Supprimer
-                  </Button>
-                </Popconfirm>
+                {canDelete && (
+                  <Popconfirm
+                    title="Êtes-vous sûr de vouloir supprimer cette ressource ?"
+                    onConfirm={() => handleDeleteResource(record.id)}
+                    okText="Oui"
+                    cancelText="Non"
+                  >
+                    <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                      Supprimer
+                    </Button>
+                  </Popconfirm>
+                )}
               </Space>
             )}
           </Space>
@@ -495,7 +498,7 @@ const ResourcesManagement = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) =>
-        isAuthenticated && user?.role === "ADMIN" ? (
+        isAuthenticated && canDelete ? (
           <Space>
             <Button
               type="link"

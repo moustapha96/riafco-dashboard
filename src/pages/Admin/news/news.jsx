@@ -58,6 +58,7 @@ const NewsManagement = () => {
    
     const [news, setNews] = useState([])
     const [loading, setLoading] = useState(false)
+    const [submitting, setSubmitting] = useState(false)
     const [modalVisible, setModalVisible] = useState(false)
     const [editingNews, setEditingNews] = useState(null)
     const [form] = Form.useForm()
@@ -98,9 +99,9 @@ const NewsManagement = () => {
                 }),
                 ...(filters.author && { authorId: filters.author })
             }
-            console.log(params)
+           
             const response = await newsService.getAll(params)
-            console.log(response)
+           
             setNews(response.news)
             setPagination(prev => ({
                 ...prev,
@@ -119,6 +120,22 @@ const NewsManagement = () => {
         fetchNews()
     }, [fetchNews])
 
+    // Nettoyer les URLs de prévisualisation lors du démontage
+    useEffect(() => {
+        return () => {
+            fileList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+            galleryList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+        }
+    }, [fileList, galleryList])
+
     // Gestion des actions CRUD
     const handleCreate = () => {
         setEditingNews(null)
@@ -135,7 +152,8 @@ const NewsManagement = () => {
         form.setFieldsValue({
             title_fr: newsItem.title_fr,
             title_en: newsItem.title_en,
-            status: newsItem.status,
+            status: newsItem.status || "DRAFT", // Valeur par défaut si null
+            validated: newsItem.validated || "PENDING", // Valeur par défaut si null
         })
         setContentFr(newsItem.content_fr || "")
         setContentEn(newsItem.content_en || "")
@@ -198,6 +216,7 @@ const NewsManagement = () => {
 
     const handleSubmit = async (values) => {
         try {
+            setSubmitting(true)
             const formData = new FormData()
             formData.append("title_fr", values.title_fr)
             formData.append("title_en", values.title_en)
@@ -206,10 +225,17 @@ const NewsManagement = () => {
             formData.append("status", values.status || "DRAFT")
             formData.append("validated", values.validated || 'PENDING')
 
-            if (fileList.length > 0 && fileList[0].originFileObj) {
-                formData.append("image", fileList[0].originFileObj)
+            // Ajouter l'image de couverture si c'est un nouveau fichier
+            if (fileList.length > 0) {
+                if (fileList[0].originFileObj) {
+                    formData.append("image", fileList[0].originFileObj)
+                } else if (fileList[0].url && !fileList[0].url.startsWith('blob:')) {
+                    // Si c'est une image existante, on ne l'envoie pas (elle est déjà sur le serveur)
+                    // Le backend gardera l'image existante si aucun nouveau fichier n'est envoyé
+                }
             }
 
+            // Ajouter les images de la galerie (seulement les nouveaux fichiers)
             galleryList.forEach((file) => {
                 if (file.originFileObj) {
                     formData.append("galleries", file.originFileObj)
@@ -225,10 +251,25 @@ const NewsManagement = () => {
             }
 
             setModalVisible(false)
+            // Nettoyer les URLs de prévisualisation
+            fileList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+            galleryList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+            setFileList([])
+            setGalleryList([])
             fetchNews()
         } catch (error) {
             console.log(error)
             message.error("Erreur lors de la sauvegarde")
+        } finally {
+            setSubmitting(false)
         }
     }
 
@@ -307,18 +348,51 @@ const NewsManagement = () => {
 
     const uploadProps = {
         fileList,
-        onChange: ({ fileList: newFileList }) => setFileList(newFileList),
+        onChange: ({ fileList: newFileList }) => {
+            // Créer des URLs de prévisualisation pour les nouveaux fichiers
+            const updatedFileList = newFileList.map(file => {
+                if (file.originFileObj && !file.url && !file.thumbUrl) {
+                    file.url = URL.createObjectURL(file.originFileObj)
+                    file.thumbUrl = file.url
+                }
+                return file
+            })
+            setFileList(updatedFileList)
+        },
         beforeUpload: () => false,
         maxCount: 1,
         accept: "image/*",
+        onRemove: (file) => {
+            // Nettoyer l'URL de prévisualisation si c'est un nouveau fichier
+            if (file.url && file.url.startsWith('blob:')) {
+                URL.revokeObjectURL(file.url)
+            }
+        }
     }
 
     const galleryUploadProps = {
         fileList: galleryList,
-        onChange: ({ fileList: newFileList }) => setGalleryList(newFileList),
+        onChange: ({ fileList: newFileList }) => {
+            // Créer des URLs de prévisualisation pour les nouveaux fichiers
+            const updatedFileList = newFileList.map(file => {
+                if (file.originFileObj && !file.url && !file.thumbUrl) {
+                    file.url = URL.createObjectURL(file.originFileObj)
+                    file.thumbUrl = file.url
+                }
+                return file
+            })
+            setGalleryList(updatedFileList)
+        },
         beforeUpload: () => false,
         multiple: true,
         accept: "image/*",
+        maxCount: 10,
+        onRemove: (file) => {
+            // Nettoyer l'URL de prévisualisation si c'est un nouveau fichier
+            if (file.url && file.url.startsWith('blob:')) {
+                URL.revokeObjectURL(file.url)
+            }
+        }
     }
 
 
@@ -335,6 +409,23 @@ const NewsManagement = () => {
             case "PUBLISHED": return "Publié"
             case "DRAFT": return "Brouillon"
             default: return status
+        }
+    }
+
+    // Fonction pour enlever les balises HTML et décoder les entités HTML
+    const stripHtmlTags = (html) => {
+        if (!html) return ""
+        try {
+            // Créer un élément temporaire pour parser le HTML
+            const tmp = document.createElement("DIV")
+            tmp.innerHTML = html
+            // Récupérer le texte sans les balises HTML
+            const text = tmp.textContent || tmp.innerText || ""
+            // Nettoyer les espaces multiples et les retours à la ligne
+            return text.replace(/\s+/g, " ").trim()
+        } catch (error) {
+            // En cas d'erreur, utiliser une regex simple pour enlever les balises
+            return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim()
         }
     }
 
@@ -517,20 +608,22 @@ const NewsManagement = () => {
                                                             onClick={() => handleEdit(item)}
                                                         />
                                                     </Tooltip>,
-                                                    <Tooltip title="Supprimer" key="delete">
-                                                        <Popconfirm
-                                                            title="Êtes-vous sûr de vouloir supprimer cette news ?"
-                                                            onConfirm={() => handleDelete(item.id)}
-                                                            okText="Oui"
-                                                            cancelText="Non"
-                                                        >
-                                                            <Button
-                                                                type="text"
-                                                                icon={<DeleteOutlined />}
-                                                                danger
-                                                            />
-                                                        </Popconfirm>
-                                                    </Tooltip>,
+                                                    canEdit && (
+                                                        <Tooltip title="Supprimer" key="delete">
+                                                            <Popconfirm
+                                                                title="Êtes-vous sûr de vouloir supprimer cette news ?"
+                                                                onConfirm={() => handleDelete(item.id)}
+                                                                okText="Oui"
+                                                                cancelText="Non"
+                                                            >
+                                                                <Button
+                                                                    type="text"
+                                                                    icon={<DeleteOutlined />}
+                                                                    danger
+                                                                />
+                                                            </Popconfirm>
+                                                        </Tooltip>
+                                                    ),
                                                 ]}
                                             >
                                                 <Card.Meta
@@ -574,11 +667,12 @@ const NewsManagement = () => {
                                                     }
                                                     description={
                                                         <div>
-                                                            {/* dangerouslySetInnerHTML={{ __html: memberCountry.description_fr }} */}
-                                                            <Paragraph ellipsis={{ rows: 3, tooltip: item.content_fr.substring(0, 150) }} style={{ marginBottom: 8 }}>
-                                                                {item.content_fr?.substring(0, 100)}...
-
-                                                            </Paragraph>
+                                                            <Tooltip title={stripHtmlTags(item.content_fr)}>
+                                                                <Paragraph style={{ marginBottom: 8, cursor: "pointer" }}>
+                                                                    {stripHtmlTags(item.content_fr)?.substring(0, 10)}
+                                                                    {stripHtmlTags(item.content_fr)?.length > 10 && "..."}
+                                                                </Paragraph>
+                                                            </Tooltip>
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                                     <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(item.author?.profilePic)} />
@@ -628,7 +722,22 @@ const NewsManagement = () => {
                     <Modal
                         title={editingNews ? "Modifier l'article" : "Créer un article"}
                         open={modalVisible}
-                        onCancel={() => setModalVisible(false)}
+                        onCancel={() => {
+                            // Nettoyer les URLs de prévisualisation avant de fermer
+                            fileList.forEach(file => {
+                                if (file.url && file.url.startsWith('blob:')) {
+                                    URL.revokeObjectURL(file.url)
+                                }
+                            })
+                            galleryList.forEach(file => {
+                                if (file.url && file.url.startsWith('blob:')) {
+                                    URL.revokeObjectURL(file.url)
+                                }
+                            })
+                            setFileList([])
+                            setGalleryList([])
+                            setModalVisible(false)
+                        }}
                         footer={null}
                         width={800}
                         style={{ top: 20 }}
@@ -697,15 +806,18 @@ const NewsManagement = () => {
                                         {fileList.length > 0 ? "Remplacer l'image" : "Sélectionner une image"}
                                     </Button>
                                 </Upload>
-                                {fileList.length > 0 && (
-                                    <div style={{ marginTop: "8px" }}>
-                                        <img
-                                            src={fileList[0].url || fileList[0].thumbUrl}
-                                            alt="Aperçu"
-                                            style={{ maxWidth: "200px", maxHeight: "150px", marginTop: "8px" }}
-                                        />
-                                    </div>
-                                )}
+                                {fileList.length > 0 && (() => {
+                                    const previewUrl = fileList[0].url || fileList[0].thumbUrl
+                                    return previewUrl ? (
+                                        <div style={{ marginTop: "8px" }}>
+                                            <img
+                                                src={previewUrl}
+                                                alt="Preview"
+                                                style={{ maxWidth: "200px", maxHeight: "150px", marginTop: "8px", objectFit: "cover" }}
+                                            />
+                                        </div>
+                                    ) : null
+                                })()}
                             </Form.Item>
 
                             <Form.Item label="Galerie d'images">
@@ -716,15 +828,18 @@ const NewsManagement = () => {
                                 </Upload>
                                 {galleryList.length > 0 && (
                                     <Row gutter={[8, 8]} style={{ marginTop: "8px" }}>
-                                        {galleryList.map((file, index) => (
-                                            <Col key={index}>
-                                                <img
-                                                    src={buildImageUrl(file.url) || buildImageUrl(file.thumbUrl)}
-                                                    alt={`Gallery ${index}`}
-                                                    style={{ width: "100px", height: "100px", objectFit: "cover" }}
-                                                />
-                                            </Col>
-                                        ))}
+                                        {galleryList.map((file, index) => {
+                                            const imageUrl = file.url || file.thumbUrl
+                                            return imageUrl ? (
+                                                <Col key={file.uid || index}>
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt={`Gallery ${index}`}
+                                                        style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
+                                                    />
+                                                </Col>
+                                            ) : null
+                                        })}
                                     </Row>
                                 )}
                             </Form.Item>
@@ -741,7 +856,7 @@ const NewsManagement = () => {
                                     }}>
                                         Annuler
                                     </Button>
-                                    <Button type="primary" htmlType="submit">
+                                    <Button type="primary" htmlType="submit" loading={submitting}>
                                         {editingNews ? "Mettre à jour" : "Créer"}
                                     </Button>
                                 </Space>

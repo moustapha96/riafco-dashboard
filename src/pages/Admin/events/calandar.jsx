@@ -4,25 +4,20 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { Button, Modal, Form, Input, DatePicker, Switch, message, Typography, Space, Card, Spin, InputNumber, Breadcrumb } from "antd";
+import { Modal, message, Typography, Card, Spin, Breadcrumb, Descriptions, Tag } from "antd";
 
 
 import moment from "moment";
 import eventService from "../../../services/eventService";
-import { PiPlusDuotone } from "react-icons/pi";
-import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
 
-
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
+const { Text } = Typography;
 
 export default function CalendarManagement() {
     const [events, setEvents] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
-    const [form] = Form.useForm();
-    const [editingEvent, setEditingEvent] = useState(null);
+    const [selectedEvent, setSelectedEvent] = useState(null);
     const [loading, setLoading] = useState(false);
     const calendarRef = useRef(null);
 
@@ -61,75 +56,19 @@ export default function CalendarManagement() {
         fetchEvents();
     }, []);
 
-   
-    const handleOpenModal = (event = null) => {
-        setEditingEvent(event);
+    // Ouvrir le modal pour afficher les détails d'un événement
+    const handleOpenModal = (event) => {
         if (event && event.extendedProps) {
-            // Cas d’un événement existant
-            form.setFieldsValue({
+            setSelectedEvent({
                 title: event.title,
                 description: event.extendedProps.description,
                 location: event.extendedProps.location,
                 isVirtual: event.extendedProps.isVirtual,
                 registrationLink: event.extendedProps.registrationLink,
-                dateRange: [moment(event.start), moment(event.end)],
+                startDate: event.start,
+                endDate: event.end,
             });
-        } else if (event && event.start) {
-            form.setFieldsValue({
-                dateRange: [moment(event.start), moment(event.end || event.start)],
-            });
-        } else {
-            form.resetFields();
-        }
-        setModalVisible(true);
-    };
-
-
-
-    // Soumettre le formulaire
-    const handleSubmit = async (values) => {
-        try {
-            const [startDate, endDate] = values.dateRange;
-            const eventData = {
-                title: values.title,
-                description: values.description,
-                startDate: startDate.toISOString(),
-                endDate: endDate ? endDate.toISOString() : null,
-                location: values.location,
-                isVirtual: values.isVirtual,
-                registrationLink: values.registrationLink,
-                status: "PUBLISHED",
-            };
-            console.log(eventData)
-            if (editingEvent.id) {
-                // Mettre à jour un événement existant
-                await eventService.update(editingEvent.id, eventData);
-                toast.success("Événement mis à jour avec succès");
-            } else {
-                // Créer un nouvel événement
-                await eventService.create(eventData);
-                toast.success("Événement créé avec succès");
-            }
-
-            setModalVisible(false);
-            fetchEvents(); // Rafraîchir la liste des événements
-        } catch (error) {
-            console.log(error)
-            console.error("Erreur lors de la sauvegarde de l'événement:", error);
-            toast.error("Erreur lors de la sauvegarde de l'événement");
-            toast.error(error.message)
-        }
-    };
-
-    // Supprimer un événement
-    const handleDeleteEvent = async (eventId) => {
-        try {
-            await eventService.delete(eventId);
-            toast.success("Événement supprimé avec succès");
-            fetchEvents(); // Rafraîchir la liste des événements
-        } catch (error) {
-            console.error("Erreur lors de la suppression de l'événement:", error);
-            toast.error("Erreur lors de la suppression de l'événement");
+            setModalVisible(true);
         }
     };
 
@@ -142,20 +81,14 @@ export default function CalendarManagement() {
         },
         initialDate: new Date().toISOString().slice(0, 10),
         navLinks: true,
-        editable: true, 
-        selectable: true, 
+        editable: false, 
+        selectable: false, 
         dayMaxEvents: true, 
         events: events,
         eventClick: (info) => {
             const event = info.event;
             console.log("Événement cliqué :", event);
             handleOpenModal(event);
-        },
-        dateClick: (info) => {
-            handleOpenModal({
-                start: info.dateStr,
-                end: info.dateStr,
-            });
         },
         height: "auto",
     };
@@ -176,112 +109,79 @@ export default function CalendarManagement() {
                     />
                 </div>
 
-                <div className="md:flex justify-between items-center mb-6">
-
-                    <Space>
-                        <Button
-                            type="primary"
-                            onClick={() => handleOpenModal()}
-                            icon={<PiPlusDuotone />}
-                        >
-                            Ajouter un Événement
-                        </Button>
-                    </Space>
-                </div>
-
-                {loading && <>
-                    <Spin size="large" />
-                </>}
-                {events && <>
-                <Card>
-                    <FullCalendar ref={calendarRef} {...calendarConfig} />
-                </Card>
-                </>}
+                {loading && (
+                    <div className="flex items-center justify-center min-h-[400px]">
+                        <Spin size="large" />
+                    </div>
+                )}
+                {!loading && (
+                    <Card>
+                        <FullCalendar ref={calendarRef} {...calendarConfig} />
+                    </Card>
+                )}
 
 
                 <Modal
-                    title={editingEvent ? "Modifier l'Événement" : "Ajouter un Événement"}
+                    title="Détails de l'Événement"
                     open={modalVisible}
-                    onCancel={() => setModalVisible(false)}
+                    onCancel={() => {
+                        setModalVisible(false);
+                        setSelectedEvent(null);
+                    }}
                     footer={null}
                     width={600}
                 >
-                    <Form form={form} layout="vertical" onFinish={handleSubmit}>
-                        <Form.Item
-                            label="Titre"
-                            name="title"
-                            rules={[{ required: true, message: "Le titre est requis" }]}
-                        >
-                            <Input placeholder="Titre de l'événement" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Description"
-                            name="description"
-                        >
-                            <Input.TextArea rows={4} placeholder="Description de l'événement" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Date et Heure"
-                            name="dateRange"
-                            rules={[{ required: true, message: "La date est requise" }]}
-                        >
-                            <RangePicker
-                                showTime={{ format: "HH:mm" }}
-                                format="YYYY-MM-DD HH:mm"
-                                style={{ width: "100%" }}
-                            />
-                        </Form.Item>
-
-                        
-
-
-                        
-                        <Form.Item label="Lieu" name="location">
-                            <Input placeholder="Lieu de l'événement" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Événement Virtuel"
-                            name="isVirtual"
-                            valuePropName="checked"
-                        >
-                            <Switch />
-                        </Form.Item>
-
-                        {form.getFieldValue("isVirtual") && <>
-                            {/* maxAttendees */}
-                            <Form.Item label="Nombre Maximum de Participants" name="maxAttendees">
-                                <InputNumber min={1} placeholder="Nombre maximum de participants" style={{ width: "100%" }} />
-                            </Form.Item>
-
-                            <Form.Item label="Lien d'Inscription" name="registrationLink">
-                                <Input placeholder="Lien pour s'inscrire" />
-                            </Form.Item>
-
-                        </>
-                        }
-
-                        <Form.Item>
-                            <Space>
-                                <Button type="primary" htmlType="submit">
-                                    {editingEvent ? "Mettre à Jour" : "Créer"}
-                                </Button>
-                                <Button onClick={() => setModalVisible(false)}>
-                                    Annuler
-                                </Button>
-                                {editingEvent && (
-                                    <Button
-                                        danger
-                                        onClick={() => handleDeleteEvent(editingEvent.id)}
+                    {selectedEvent && (
+                        <Descriptions column={1} bordered>
+                            <Descriptions.Item label="Titre">
+                                <Text strong>{selectedEvent.title}</Text>
+                            </Descriptions.Item>
+                            
+                            {selectedEvent.description && (
+                                <Descriptions.Item label="Description">
+                                    <Text>{selectedEvent.description}</Text>
+                                </Descriptions.Item>
+                            )}
+                            
+                            <Descriptions.Item label="Date de début">
+                                <Text>
+                                    {moment(selectedEvent.startDate).format("DD/MM/YYYY HH:mm")}
+                                </Text>
+                            </Descriptions.Item>
+                            
+                            {selectedEvent.endDate && (
+                                <Descriptions.Item label="Date de fin">
+                                    <Text>
+                                        {moment(selectedEvent.endDate).format("DD/MM/YYYY HH:mm")}
+                                    </Text>
+                                </Descriptions.Item>
+                            )}
+                            
+                            {selectedEvent.location && (
+                                <Descriptions.Item label="Lieu">
+                                    <Text>{selectedEvent.location}</Text>
+                                </Descriptions.Item>
+                            )}
+                            
+                            <Descriptions.Item label="Type">
+                                <Tag color={selectedEvent.isVirtual ? "blue" : "green"}>
+                                    {selectedEvent.isVirtual ? "Virtuel" : "Présentiel"}
+                                </Tag>
+                            </Descriptions.Item>
+                            
+                            {selectedEvent.registrationLink && (
+                                <Descriptions.Item label="Lien d'inscription">
+                                    <a 
+                                        href={selectedEvent.registrationLink} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
                                     >
-                                        Supprimer
-                                    </Button>
-                                )}
-                            </Space>
-                        </Form.Item>
-                    </Form>
+                                        {selectedEvent.registrationLink}
+                                    </a>
+                                </Descriptions.Item>
+                            )}
+                        </Descriptions>
+                    )}
                 </Modal>
             </div>
         </div>

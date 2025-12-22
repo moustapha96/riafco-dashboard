@@ -24,11 +24,14 @@ import organizationService from "../../../services/organizationService";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "../../../hooks/useAuth";
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 
 const HistoriqueManagement = () => {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
    
     // États pour History
     const [history, setHistory] = useState([]);
@@ -173,14 +176,16 @@ const HistoriqueManagement = () => {
                                                                 setHistoryModalVisible(true);
                                                             }}
                                                         />
-                                                        <Popconfirm
-                                                            title="Êtes-vous sûr de vouloir supprimer cet événement ?"
-                                                            onConfirm={() => handleDeleteHistory(record.id)}
-                                                            okText="Oui"
-                                                            cancelText="Non"
-                                                        >
-                                                            <Button danger icon={<DeleteOutlined />} />
-                                                        </Popconfirm>
+                                                        {canDelete && (
+                                                            <Popconfirm
+                                                                title="Êtes-vous sûr de vouloir supprimer cet événement ?"
+                                                                onConfirm={() => handleDeleteHistory(record.id)}
+                                                                okText="Oui"
+                                                                cancelText="Non"
+                                                            >
+                                                                <Button danger icon={<DeleteOutlined />} />
+                                                            </Popconfirm>
+                                                        )}
                                                     </Space>
                                                 ),
                                             },

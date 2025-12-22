@@ -5,13 +5,18 @@ import { Link, useNavigate } from "react-router-dom";
 import * as Icon from 'react-feather'
 
 import { MdAdd, MdDelete, MdDeleteOutline, MdEdit, MdKeyboardArrowRight } from "react-icons/md";
-import client2 from '../../../assets/images/client/02.jpg'
 import axiosInstance from "../../../services/api";
+
+const DEFAULT_LOGO_URL = "https://riafco-oi.org/logo.png";
 import { Breadcrumb, Button, message, Popconfirm, Space, Table } from "antd";
 import teamMemberService from "../../../services/teamMemberService";
 import { buildImageUrl } from "../../../utils/imageUtils";
+import { useAuth } from "../../../hooks/useAuth";
 
 const TeamMembersAdmin = () => {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+    
     const [teamMembers, setTeamMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -82,14 +87,16 @@ const TeamMembersAdmin = () => {
                     >
                         Modifier
                     </Button>
-                    <Popconfirm
-                        title="Êtes-vous sûr de vouloir supprimer ce membre ?"
-                        onConfirm={() => handleDelete(record.id)}
-                        okText="Oui"
-                        cancelText="Non"
-                    >
-                        <Button type="link" danger icon={<MdDelete />} />
-                    </Popconfirm>
+                    {canDelete && (
+                        <Popconfirm
+                            title="Êtes-vous sûr de vouloir supprimer ce membre ?"
+                            onConfirm={() => handleDelete(record.id)}
+                            okText="Oui"
+                            cancelText="Non"
+                        >
+                            <Button type="link" danger icon={<MdDelete />} />
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
         },
@@ -154,8 +161,16 @@ const TeamMembersAdmin = () => {
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
-
-                                            <img src={client2} alt="client2" className="w-full h-full object-cover" />
+                                            <img 
+                                                src={DEFAULT_LOGO_URL} 
+                                                alt="Logo RIAFCO" 
+                                                className="w-full h-full object-cover" 
+                                                onError={(e) => {
+                                                    // Fallback si l'image ne charge pas
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-500 text-sm">Logo</div>';
+                                                }}
+                                            />
                                         </div>
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black max-h-[208px] max-w-[208px] rounded-full opacity-0 group-hover:opacity-100 duration-500"></div>
@@ -167,19 +182,21 @@ const TeamMembersAdmin = () => {
                                         >
                                             <MdEdit className="size-5" />
                                         </Link>
-                                        <Popconfirm
-                                            title="Êtes-vous sûr de vouloir supprimer ce membre ?"
-                                            onConfirm={() => handleDelete(member.id)}
-                                            okText="Oui"
-                                            cancelText="Non"
-                                        >
-                                            <Button
-                                                danger
-                                                className="size-9 inline-flex items-center justify-center tracking-wide align-middle duration-500 text-base text-center rounded-full border border-red-600 bg-red-600 hover:border-red-600 hover:bg-red-600 text-white"
+                                        {canDelete && (
+                                            <Popconfirm
+                                                title="Êtes-vous sûr de vouloir supprimer ce membre ?"
+                                                onConfirm={() => handleDelete(member.id)}
+                                                okText="Oui"
+                                                cancelText="Non"
                                             >
-                                                <MdDeleteOutline className="size-15" />
-                                            </Button>
-                                        </Popconfirm>
+                                                <Button
+                                                    danger
+                                                    className="size-9 inline-flex items-center justify-center tracking-wide align-middle duration-500 text-base text-center rounded-full border border-red-600 bg-red-600 hover:border-red-600 hover:bg-red-600 text-white"
+                                                >
+                                                    <MdDeleteOutline className="size-15" />
+                                                </Button>
+                                            </Popconfirm>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="content mt-3">

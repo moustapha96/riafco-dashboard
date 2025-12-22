@@ -18,12 +18,15 @@ import {
     Tag,
     Popconfirm,
     Breadcrumb,
+    Descriptions,
+    Divider,
 } from "antd"
 import {
     SaveOutlined,
     EditOutlined,
     DeleteOutlined,
     PlusOutlined,
+    EyeOutlined,
 } from "@ant-design/icons"
 
 
@@ -33,16 +36,22 @@ import legalService from "../../../services/legalService "
 import { toast } from "sonner"
 import { Link } from "react-router-dom"
 import ReactQuill from "react-quill";
+import { useAuth } from "../../../hooks/useAuth";
 
 const { Title, Text } = Typography
 
 const { Option } = Select
 const MentionLegalManagement = () => {
+    const { user } = useAuth();
+    const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+    
     const [loading, setLoading] = useState(false)
 
     const [legalDocuments, setLegalDocuments] = useState([])
     const [editingDocument, setEditingDocument] = useState(null)
     const [documentModalVisible, setDocumentModalVisible] = useState(false)
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false)
+    const [selectedDocument, setSelectedDocument] = useState(null)
 
     const [documentForm] = Form.useForm()
 
@@ -127,6 +136,11 @@ const MentionLegalManagement = () => {
         }
     }
 
+    const handleViewDetails = (document) => {
+        setSelectedDocument(document)
+        setDetailsModalVisible(true)
+    }
+
     const quillModules = {
         toolbar: [
             ["bold", "italic", "underline", "strike"],
@@ -191,19 +205,24 @@ const MentionLegalManagement = () => {
             key: "actions",
             render: (_, record) => (
                 <Space>
+                    <Button type="link" icon={<EyeOutlined />} onClick={() => handleViewDetails(record)}>
+                        Voir détails
+                    </Button>
                     <Button type="link" icon={<EditOutlined />} onClick={() => handleEditDocument(record)}>
                         Modifier
                     </Button>
-                    <Popconfirm
-                        title="Êtes-vous sûr de vouloir supprimer ce document ?"
-                        onConfirm={() => handleDeleteDocument(record.id)}
-                        okText="Oui"
-                        cancelText="Non"
-                    >
-                        <Button type="link" danger icon={<DeleteOutlined />}>
-                            
-                        </Button>
-                    </Popconfirm>
+                    {canDelete && (
+                        <Popconfirm
+                            title="Êtes-vous sûr de vouloir supprimer ce document ?"
+                            onConfirm={() => handleDeleteDocument(record.id)}
+                            okText="Oui"
+                            cancelText="Non"
+                        >
+                            <Button type="link" danger icon={<DeleteOutlined />}>
+                                
+                            </Button>
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
         },
@@ -334,6 +353,114 @@ const MentionLegalManagement = () => {
                                 </Space>
                             </Form.Item>
                         </Form>
+                    </Modal>
+
+                    {/* Modal pour afficher les détails */}
+                    <Modal
+                        title="Détails du document"
+                        open={detailsModalVisible}
+                        onCancel={() => {
+                            setDetailsModalVisible(false)
+                            setSelectedDocument(null)
+                        }}
+                        footer={[
+                            <Button key="close" onClick={() => {
+                                setDetailsModalVisible(false)
+                                setSelectedDocument(null)
+                            }}>
+                                Fermer
+                            </Button>,
+                        ]}
+                        width={900}
+                    >
+                        {selectedDocument && (
+                            <>
+                                <Descriptions column={1} bordered>
+                                    <Descriptions.Item label="Titre (Français)">
+                                        <Text strong>{selectedDocument.title_fr}</Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Titre (Anglais)">
+                                        <Text strong>{selectedDocument.title_en}</Text>
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Type">
+                                        {(() => {
+                                            const typeMap = {
+                                                PRIVACY_POLICY: { text: "Politique de Confidentialité", color: "blue" },
+                                                TERMS_OF_SERVICE: { text: "Conditions d'Utilisation", color: "green" },
+                                                LEGAL_NOTICE: { text: "Mentions Légales", color: "orange" },
+                                            }
+                                            const config = typeMap[selectedDocument.type] || { text: selectedDocument.type, color: "default" }
+                                            return <Tag color={config.color}>{config.text}</Tag>
+                                        })()}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Statut">
+                                        <Tag color={selectedDocument.isActive ? "success" : "default"}>
+                                            {selectedDocument.isActive ? "Actif" : "Inactif"}
+                                        </Tag>
+                                    </Descriptions.Item>
+                                    {selectedDocument.version && (
+                                        <Descriptions.Item label="Version">
+                                            <Text>{selectedDocument.version}</Text>
+                                        </Descriptions.Item>
+                                    )}
+                                    <Descriptions.Item label="Date d'effet">
+                                        <Text>
+                                            {selectedDocument.effectiveDate 
+                                                ? dayjs(selectedDocument.effectiveDate).format("DD/MM/YYYY") 
+                                                : "N/A"}
+                                        </Text>
+                                    </Descriptions.Item>
+                                    {selectedDocument.createdAt && (
+                                        <Descriptions.Item label="Date de création">
+                                            <Text>
+                                                {dayjs(selectedDocument.createdAt).format("DD/MM/YYYY HH:mm")}
+                                            </Text>
+                                        </Descriptions.Item>
+                                    )}
+                                    {selectedDocument.updatedAt && (
+                                        <Descriptions.Item label="Dernière modification">
+                                            <Text>
+                                                {dayjs(selectedDocument.updatedAt).format("DD/MM/YYYY HH:mm")}
+                                            </Text>
+                                        </Descriptions.Item>
+                                    )}
+                                </Descriptions>
+
+                                <Divider />
+
+                                <div style={{ marginBottom: "16px" }}>
+                                    <Title level={5}>Contenu (Français)</Title>
+                                    <div 
+                                        style={{ 
+                                            padding: "16px", 
+                                            border: "1px solid #d9d9d9", 
+                                            borderRadius: "4px",
+                                            backgroundColor: "#fafafa",
+                                            maxHeight: "400px",
+                                            overflowY: "auto"
+                                        }}
+                                        dangerouslySetInnerHTML={{ __html: selectedDocument.content_fr || "Aucun contenu" }}
+                                    />
+                                </div>
+
+                                <Divider />
+
+                                <div>
+                                    <Title level={5}>Contenu (Anglais)</Title>
+                                    <div 
+                                        style={{ 
+                                            padding: "16px", 
+                                            border: "1px solid #d9d9d9", 
+                                            borderRadius: "4px",
+                                            backgroundColor: "#fafafa",
+                                            maxHeight: "400px",
+                                            overflowY: "auto"
+                                        }}
+                                        dangerouslySetInnerHTML={{ __html: selectedDocument.content_en || "Aucun contenu" }}
+                                    />
+                                </div>
+                            </>
+                        )}
                     </Modal>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useContext } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import {
     Card,
@@ -35,24 +35,145 @@ import {
     UsergroupAddOutlined,
     SearchOutlined,
     FilterOutlined,
-    ReloadOutlined
+    ReloadOutlined,
+    TrophyOutlined,
+    CalendarOutlined,
+    GlobalOutlined,
+    TeamOutlined,
+    BulbOutlined,
+    ExperimentOutlined,
+    RocketOutlined,
+    FireOutlined,
+    StarOutlined,
+    GiftOutlined,
+    HeartOutlined,
+    BankOutlined,
+    ShopOutlined,
+    MedicineBoxOutlined,
+    CarOutlined,
+    HomeOutlined,
+    EnvironmentOutlined,
+    VideoCameraOutlined,
+    SoundOutlined,
+    FileTextOutlined,
+    CodeOutlined,
+    ToolOutlined,
+    SafetyOutlined,
+    DollarOutlined,
+    FundOutlined,
+    ThunderboltOutlined,
+    ApiOutlined,
+    CloudOutlined,
+    DatabaseOutlined,
+    MobileOutlined,
+    LaptopOutlined,
+    CameraOutlined,
+    PlayCircleOutlined,
+    CustomerServiceOutlined,
+    ShoppingOutlined,
+    ShoppingCartOutlined,
+    CrownOutlined,
+    LikeOutlined,
+    CommentOutlined,
+    ShareAltOutlined,
+    SendOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    MessageOutlined,
+    NotificationOutlined,
+    SettingOutlined,
+    BuildOutlined,
+    BugOutlined,
+    CheckCircleOutlined,
+    InfoCircleOutlined,
+    QuestionCircleOutlined,
+    StopOutlined,
+    PauseCircleOutlined,
+    AppstoreOutlined,
+    DashboardOutlined,
+    ControlOutlined,
+    SecurityScanOutlined,
+    LockOutlined,
+    KeyOutlined,
+    FileAddOutlined,
+    FolderOutlined,
+    PrinterOutlined,
+    ScanOutlined,
+    QrcodeOutlined,
+    LineChartOutlined,
+    BarChartOutlined,
+    PieChartOutlined,
+    SlidersOutlined
 } from "@ant-design/icons"
 import moment from "moment"
 import "moment/locale/fr"
 import activityService from "../../../services/activityService"
 import { toast } from "sonner"
-import { FaHandshakeAltSlash } from "react-icons/fa"
-import { MdAdd } from "react-icons/md"
+import {
+    FaHandshakeAltSlash,
+    FaGraduationCap,
+    FaMicrophone,
+    FaLaptopCode,
+    FaPaintBrush,
+    FaMusic,
+    FaGamepad,
+    FaRunning,
+    FaUtensils,
+    FaHotel,
+    FaPlane,
+    FaBicycle,
+    FaSwimmingPool,
+    FaMountain,
+    FaTree,
+    FaSeedling,
+    FaRecycle,
+    FaHeartbeat,
+    FaUsers,
+    FaBriefcase,
+    FaChartLine,
+    FaLightbulb,
+    FaAward,
+    FaTrophy,
+    FaCertificate,
+    FaUniversity,
+    FaSchool,
+    FaChalkboardTeacher,
+    FaMicroscope,
+    FaFlask,
+    FaRobot,
+    FaCloud,
+    FaServer,
+    FaDatabase,
+    FaShieldAlt,
+    FaHandshake,
+    FaPalette,
+    FaCamera,
+    FaVideo,
+    FaHeadphones,
+    FaPodcast
+} from "react-icons/fa"
+import {
+    MdAdd,
+    MdSchool,
+    MdWork,
+    MdBusiness,
+    MdEvent,
+    MdSchedule
+} from "react-icons/md"
 import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
 import { buildImageUrl } from "../../../utils/imageUtils"
+import { AuthContext } from "../../../context/AuthContext"
 
 const { Paragraph, Text, Title } = Typography
 const { Option } = Select
 const { RangePicker } = DatePicker
 
 const ActivitesManagement = () => {
+    const { user: currentUser } = useContext(AuthContext)
     const navigate = useNavigate()
+    const canEdit = ["ADMIN", "SUPER_ADMIN"].includes(currentUser?.role?.trim?.().toUpperCase());
+
     const [activities, setActivities] = useState([])
     const [loading, setLoading] = useState(false)
     const [modalVisible, setModalVisible] = useState(false)
@@ -98,19 +219,51 @@ const ActivitesManagement = () => {
 
     const uploadProps = {
         fileList,
-        onChange: ({ fileList: newFileList }) => setFileList(newFileList),
+        onChange: ({ fileList: newFileList }) => {
+            // Créer des URLs de prévisualisation pour les nouveaux fichiers
+            const updatedFileList = newFileList.map(file => {
+                if (file.originFileObj && !file.url && !file.thumbUrl) {
+                    file.url = URL.createObjectURL(file.originFileObj)
+                    file.thumbUrl = file.url
+                }
+                return file
+            })
+            setFileList(updatedFileList)
+        },
         beforeUpload: () => false,
         maxCount: 1,
         accept: "image/*",
+        onRemove: (file) => {
+            // Nettoyer l'URL de prévisualisation si c'est un nouveau fichier
+            if (file.url && file.url.startsWith('blob:')) {
+                URL.revokeObjectURL(file.url)
+            }
+        }
     }
 
     const galleryUploadProps = {
         fileList: galleryList,
-        onChange: ({ fileList: newFileList }) => setGalleryList(newFileList),
+        onChange: ({ fileList: newFileList }) => {
+            // Créer des URLs de prévisualisation pour les nouveaux fichiers
+            const updatedFileList = newFileList.map(file => {
+                if (file.originFileObj && !file.url && !file.thumbUrl) {
+                    file.url = URL.createObjectURL(file.originFileObj)
+                    file.thumbUrl = file.url
+                }
+                return file
+            })
+            setGalleryList(updatedFileList)
+        },
         beforeUpload: () => false,
         multiple: true, // Permet de sélectionner plusieurs fichiers
         accept: "image/*",
-        maxCount: 10
+        maxCount: 10,
+        onRemove: (file) => {
+            // Nettoyer l'URL de prévisualisation si c'est un nouveau fichier
+            if (file.url && file.url.startsWith('blob:')) {
+                URL.revokeObjectURL(file.url)
+            }
+        }
     }
 
 
@@ -149,10 +302,27 @@ const ActivitesManagement = () => {
         fetchActivities()
     }, [fetchActivities])
 
+    // Nettoyer les URLs de prévisualisation lors du démontage
+    useEffect(() => {
+        return () => {
+            fileList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+            galleryList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+        }
+    }, [])
+
     // Gestion des actions CRUD
     const handleCreate = () => {
         setEditingActivity(null)
         setFileList([])
+        setGalleryList([])
         setDescriptionFr("")
         setDescriptionEn("")
         form.resetFields()
@@ -164,10 +334,9 @@ const ActivitesManagement = () => {
         form.setFieldsValue({
             title_fr: activity.title_fr,
             title_en: activity.title_en,
-            icon: activity.icon,
-            status: activity.status,
-            dateActivity: activity.dateActivity
-
+            icon: activity.icon || "book", // Valeur par défaut si null
+            status: activity.status || "DRAFT", // Valeur par défaut si null
+            dateActivity: activity.dateActivity || null, // Le format YYYY-MM-DD est déjà correct pour input type="date"
         })
         setDescriptionEn(activity.description_en || "")
         setDescriptionFr(activity.description_fr || "")
@@ -177,7 +346,7 @@ const ActivitesManagement = () => {
                     uid: "-1",
                     name: "image.jpg",
                     status: "done",
-                    url: activity.image,
+                    url: buildImageUrl(activity.image),
                 }]
                 : []
         )
@@ -186,7 +355,7 @@ const ActivitesManagement = () => {
                 uid: `-${index + 2}`,
                 name: `gallery-${index}.jpg`,
                 status: "done",
-                url: url,
+                url: buildImageUrl(url),
             })) || []
         )
         setModalVisible(true)
@@ -230,10 +399,17 @@ const ActivitesManagement = () => {
             formData.append("status", values.status || "DRAFT")
             formData.append("dateActivity", values.dateActivity)
 
-            if (fileList.length > 0 && fileList[0].originFileObj) {
-                formData.append("image", fileList[0].originFileObj)
+            // Ajouter l'image de couverture si c'est un nouveau fichier
+            if (fileList.length > 0) {
+                if (fileList[0].originFileObj) {
+                    formData.append("image", fileList[0].originFileObj)
+                } else if (fileList[0].url && !fileList[0].url.startsWith('blob:')) {
+                    // Si c'est une image existante, on ne l'envoie pas (elle est déjà sur le serveur)
+                    // Le backend gardera l'image existante si aucun nouveau fichier n'est envoyé
+                }
             }
 
+            // Ajouter les images de la galerie (seulement les nouveaux fichiers)
             galleryList.forEach((file) => {
                 if (file.originFileObj) {
                     formData.append("galleries", file.originFileObj)
@@ -249,10 +425,40 @@ const ActivitesManagement = () => {
             }
 
             setModalVisible(false)
+            // Nettoyer les URLs de prévisualisation
+            fileList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+            galleryList.forEach(file => {
+                if (file.url && file.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(file.url)
+                }
+            })
+            setFileList([])
+            setGalleryList([])
             fetchActivities()
         } catch (error) {
             console.error("Erreur lors de la sauvegarde:", error)
             toast.error("Erreur lors de la sauvegarde")
+        }
+    }
+
+    // Fonction pour enlever les balises HTML et décoder les entités HTML
+    const stripHtmlTags = (html) => {
+        if (!html) return ""
+        try {
+            // Créer un élément temporaire pour parser le HTML
+            const tmp = document.createElement("DIV")
+            tmp.innerHTML = html
+            // Récupérer le texte sans les balises HTML
+            const text = tmp.textContent || tmp.innerText || ""
+            // Nettoyer les espaces multiples et les retours à la ligne
+            return text.replace(/\s+/g, " ").trim()
+        } catch (error) {
+            // En cas d'erreur, utiliser une regex simple pour enlever les balises
+            return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim()
         }
     }
 
@@ -262,6 +468,113 @@ const ActivitesManagement = () => {
             case "book": return <BookOutlined />
             case "users": return <UsergroupAddOutlined />
             case "handshake": return <FaHandshakeAltSlash />
+            case "graduation": return <FaGraduationCap />
+            case "microphone": return <FaMicrophone />
+            case "code": return <FaLaptopCode />
+            case "paint": return <FaPaintBrush />
+            case "music": return <FaMusic />
+            case "game": return <FaGamepad />
+            case "sport": return <FaRunning />
+            case "food": return <FaUtensils />
+            case "hotel": return <FaHotel />
+            case "travel": return <FaPlane />
+            case "bike": return <FaBicycle />
+            case "swim": return <FaSwimmingPool />
+            case "mountain": return <FaMountain />
+            case "tree": return <FaTree />
+            case "seedling": return <FaSeedling />
+            case "recycle": return <FaRecycle />
+            case "health": return <FaHeartbeat />
+            case "business": return <FaBriefcase />
+            case "chart": return <FaChartLine />
+            case "bulb": return <FaLightbulb />
+            case "award": return <FaAward />
+            case "trophy": return <FaTrophy />
+            case "certificate": return <FaCertificate />
+            case "university": return <FaUniversity />
+            case "school": return <FaSchool />
+            case "teacher": return <FaChalkboardTeacher />
+            case "microscope": return <FaMicroscope />
+            case "flask": return <FaFlask />
+            case "robot": return <FaRobot />
+            case "cloud": return <FaCloud />
+            case "server": return <FaServer />
+            case "database": return <FaDatabase />
+            case "shield": return <FaShieldAlt />
+            case "handshake-alt": return <FaHandshake />
+            case "palette": return <FaPalette />
+            case "camera": return <FaCamera />
+            case "video": return <FaVideo />
+            case "headphones": return <FaHeadphones />
+            case "podcast": return <FaPodcast />
+            case "calendar": return <CalendarOutlined />
+            case "global": return <GlobalOutlined />
+            case "team": return <TeamOutlined />
+            case "bulb-ant": return <BulbOutlined />
+            case "experiment": return <ExperimentOutlined />
+            case "rocket": return <RocketOutlined />
+            case "fire": return <FireOutlined />
+            case "star": return <StarOutlined />
+            case "gift": return <GiftOutlined />
+            case "heart": return <HeartOutlined />
+            case "bank": return <BankOutlined />
+            case "shop": return <ShopOutlined />
+            case "medicine": return <MedicineBoxOutlined />
+            case "car": return <CarOutlined />
+            case "home": return <HomeOutlined />
+            case "environment": return <EnvironmentOutlined />
+            case "video-camera": return <VideoCameraOutlined />
+            case "sound": return <SoundOutlined />
+            case "file": return <FileTextOutlined />
+            case "code-ant": return <CodeOutlined />
+            case "tool": return <ToolOutlined />
+            case "safety": return <SafetyOutlined />
+            case "dollar": return <DollarOutlined />
+            case "fund": return <FundOutlined />
+            case "thunderbolt": return <ThunderboltOutlined />
+            case "api": return <ApiOutlined />
+            case "cloud-ant": return <CloudOutlined />
+            case "database-ant": return <DatabaseOutlined />
+            case "mobile": return <MobileOutlined />
+            case "laptop": return <LaptopOutlined />
+            case "camera-ant": return <CameraOutlined />
+            case "play": return <PlayCircleOutlined />
+            case "customer": return <CustomerServiceOutlined />
+            case "shopping": return <ShoppingOutlined />
+            case "cart": return <ShoppingCartOutlined />
+            case "crown": return <CrownOutlined />
+            case "like": return <LikeOutlined />
+            case "comment": return <CommentOutlined />
+            case "share": return <ShareAltOutlined />
+            case "send": return <SendOutlined />
+            case "mail": return <MailOutlined />
+            case "phone": return <PhoneOutlined />
+            case "message": return <MessageOutlined />
+            case "notification": return <NotificationOutlined />
+            case "setting": return <SettingOutlined />
+            case "build": return <BuildOutlined />
+            case "bug": return <BugOutlined />
+            case "check": return <CheckCircleOutlined />
+            case "info": return <InfoCircleOutlined />
+            case "question": return <QuestionCircleOutlined />
+            case "stop": return <StopOutlined />
+            case "pause": return <PauseCircleOutlined />
+            case "appstore": return <AppstoreOutlined />
+            case "dashboard": return <DashboardOutlined />
+            case "control": return <ControlOutlined />
+            case "security": return <SecurityScanOutlined />
+            case "shield-ant": return <FaShieldAlt />
+            case "lock": return <LockOutlined />
+            case "key": return <KeyOutlined />
+            case "file-add": return <FileAddOutlined />
+            case "folder": return <FolderOutlined />
+            case "printer": return <PrinterOutlined />
+            case "scan": return <ScanOutlined />
+            case "qrcode": return <QrcodeOutlined />
+            case "line-chart": return <LineChartOutlined />
+            case "bar-chart": return <BarChartOutlined />
+            case "pie-chart": return <PieChartOutlined />
+            case "sliders": return <SlidersOutlined />
             default: return <BookOutlined />
         }
     }
@@ -360,6 +673,113 @@ const ActivitesManagement = () => {
         { value: "book", label: "Formation", icon: <BookOutlined /> },
         { value: "users", label: "Conférence", icon: <UsergroupAddOutlined /> },
         { value: "handshake", label: "Atelier", icon: <FaHandshakeAltSlash /> },
+        { value: "graduation", label: "Diplôme / Certification", icon: <FaGraduationCap /> },
+        { value: "microphone", label: "Séminaire", icon: <FaMicrophone /> },
+        { value: "code", label: "Développement", icon: <FaLaptopCode /> },
+        { value: "paint", label: "Art / Design", icon: <FaPaintBrush /> },
+        { value: "music", label: "Musique", icon: <FaMusic /> },
+        { value: "game", label: "Gaming / E-sport", icon: <FaGamepad /> },
+        { value: "sport", label: "Sport", icon: <FaRunning /> },
+        { value: "food", label: "Gastronomie", icon: <FaUtensils /> },
+        { value: "hotel", label: "Hôtellerie", icon: <FaHotel /> },
+        { value: "travel", label: "Voyage", icon: <FaPlane /> },
+        { value: "bike", label: "Cyclisme", icon: <FaBicycle /> },
+        { value: "swim", label: "Natation", icon: <FaSwimmingPool /> },
+        { value: "mountain", label: "Randonnée", icon: <FaMountain /> },
+        { value: "tree", label: "Environnement", icon: <FaTree /> },
+        { value: "seedling", label: "Agriculture", icon: <FaSeedling /> },
+        { value: "recycle", label: "Recyclage", icon: <FaRecycle /> },
+        { value: "health", label: "Santé", icon: <FaHeartbeat /> },
+        { value: "business", label: "Business", icon: <FaBriefcase /> },
+        { value: "chart", label: "Finance", icon: <FaChartLine /> },
+        { value: "bulb", label: "Innovation", icon: <FaLightbulb /> },
+        { value: "award", label: "Récompense", icon: <FaAward /> },
+        { value: "trophy", label: "Compétition", icon: <FaTrophy /> },
+        { value: "certificate", label: "Certification", icon: <FaCertificate /> },
+        { value: "university", label: "Université", icon: <FaUniversity /> },
+        { value: "school", label: "École", icon: <FaSchool /> },
+        { value: "teacher", label: "Enseignement", icon: <FaChalkboardTeacher /> },
+        { value: "microscope", label: "Recherche", icon: <FaMicroscope /> },
+        { value: "flask", label: "Science", icon: <FaFlask /> },
+        { value: "robot", label: "Robotique", icon: <FaRobot /> },
+        { value: "cloud", label: "Cloud Computing", icon: <FaCloud /> },
+        { value: "server", label: "Infrastructure", icon: <FaServer /> },
+        { value: "database", label: "Base de données", icon: <FaDatabase /> },
+        { value: "shield", label: "Sécurité", icon: <FaShieldAlt /> },
+        { value: "handshake-alt", label: "Partenariat", icon: <FaHandshake /> },
+        { value: "palette", label: "Créativité", icon: <FaPalette /> },
+        { value: "camera", label: "Photographie", icon: <FaCamera /> },
+        { value: "video", label: "Vidéo", icon: <FaVideo /> },
+        { value: "headphones", label: "Audio", icon: <FaHeadphones /> },
+        { value: "podcast", label: "Podcast", icon: <FaPodcast /> },
+        { value: "calendar", label: "Événement", icon: <CalendarOutlined /> },
+        { value: "global", label: "International", icon: <GlobalOutlined /> },
+        { value: "team", label: "Équipe", icon: <TeamOutlined /> },
+        { value: "bulb-ant", label: "Idée", icon: <BulbOutlined /> },
+        { value: "experiment", label: "Expérimentation", icon: <ExperimentOutlined /> },
+        { value: "rocket", label: "Lancement", icon: <RocketOutlined /> },
+        { value: "fire", label: "Urgent", icon: <FireOutlined /> },
+        { value: "star", label: "Premium", icon: <StarOutlined /> },
+        { value: "gift", label: "Cadeau", icon: <GiftOutlined /> },
+        { value: "heart", label: "Bénévolat", icon: <HeartOutlined /> },
+        { value: "bank", label: "Financement", icon: <BankOutlined /> },
+        { value: "shop", label: "Commerce", icon: <ShopOutlined /> },
+        { value: "medicine", label: "Médecine", icon: <MedicineBoxOutlined /> },
+        { value: "car", label: "Transport", icon: <CarOutlined /> },
+        { value: "home", label: "Immobilier", icon: <HomeOutlined /> },
+        { value: "environment", label: "Écologie", icon: <EnvironmentOutlined /> },
+        { value: "video-camera", label: "Production", icon: <VideoCameraOutlined /> },
+        { value: "sound", label: "Son", icon: <SoundOutlined /> },
+        { value: "file", label: "Documentation", icon: <FileTextOutlined /> },
+        { value: "code-ant", label: "Programmation", icon: <CodeOutlined /> },
+        { value: "tool", label: "Outillage", icon: <ToolOutlined /> },
+        { value: "safety", label: "Sécurité", icon: <SafetyOutlined /> },
+        { value: "dollar", label: "Économie", icon: <DollarOutlined /> },
+        { value: "fund", label: "Investissement", icon: <FundOutlined /> },
+        { value: "thunderbolt", label: "Énergie", icon: <ThunderboltOutlined /> },
+        { value: "api", label: "API", icon: <ApiOutlined /> },
+        { value: "cloud-ant", label: "Cloud", icon: <CloudOutlined /> },
+        { value: "database-ant", label: "Data", icon: <DatabaseOutlined /> },
+        { value: "mobile", label: "Mobile", icon: <MobileOutlined /> },
+        { value: "laptop", label: "Informatique", icon: <LaptopOutlined /> },
+        { value: "camera-ant", label: "Photo", icon: <CameraOutlined /> },
+        { value: "play", label: "Média", icon: <PlayCircleOutlined /> },
+        { value: "customer", label: "Service Client", icon: <CustomerServiceOutlined /> },
+        { value: "shopping", label: "Achat", icon: <ShoppingOutlined /> },
+        { value: "cart", label: "E-commerce", icon: <ShoppingCartOutlined /> },
+        { value: "crown", label: "VIP", icon: <CrownOutlined /> },
+        { value: "like", label: "Social", icon: <LikeOutlined /> },
+        { value: "comment", label: "Discussion", icon: <CommentOutlined /> },
+        { value: "share", label: "Partage", icon: <ShareAltOutlined /> },
+        { value: "send", label: "Communication", icon: <SendOutlined /> },
+        { value: "mail", label: "Email", icon: <MailOutlined /> },
+        { value: "phone", label: "Téléphonie", icon: <PhoneOutlined /> },
+        { value: "message", label: "Messagerie", icon: <MessageOutlined /> },
+        { value: "notification", label: "Notification", icon: <NotificationOutlined /> },
+        { value: "setting", label: "Configuration", icon: <SettingOutlined /> },
+        { value: "build", label: "Construction", icon: <BuildOutlined /> },
+        { value: "bug", label: "Debug", icon: <BugOutlined /> },
+        { value: "check", label: "Validation", icon: <CheckCircleOutlined /> },
+        { value: "info", label: "Information", icon: <InfoCircleOutlined /> },
+        { value: "question", label: "FAQ", icon: <QuestionCircleOutlined /> },
+        { value: "stop", label: "Arrêt", icon: <StopOutlined /> },
+        { value: "pause", label: "Pause", icon: <PauseCircleOutlined /> },
+        { value: "appstore", label: "Application", icon: <AppstoreOutlined /> },
+        { value: "dashboard", label: "Tableau de bord", icon: <DashboardOutlined /> },
+        { value: "control", label: "Contrôle", icon: <ControlOutlined /> },
+        { value: "security", label: "Cybersécurité", icon: <SecurityScanOutlined /> },
+        { value: "shield-ant", label: "Protection", icon: <FaShieldAlt /> },
+        { value: "lock", label: "Confidentialité", icon: <LockOutlined /> },
+        { value: "key", label: "Accès", icon: <KeyOutlined /> },
+        { value: "file-add", label: "Ajout", icon: <FileAddOutlined /> },
+        { value: "folder", label: "Organisation", icon: <FolderOutlined /> },
+        { value: "printer", label: "Impression", icon: <PrinterOutlined /> },
+        { value: "scan", label: "Scan", icon: <ScanOutlined /> },
+        { value: "qrcode", label: "QR Code", icon: <QrcodeOutlined /> },
+        { value: "line-chart", label: "Analyse", icon: <LineChartOutlined /> },
+        { value: "bar-chart", label: "Statistiques", icon: <BarChartOutlined /> },
+        { value: "pie-chart", label: "Rapport", icon: <PieChartOutlined /> },
+        { value: "sliders", label: "Paramètres", icon: <SlidersOutlined /> },
     ]
 
     return (
@@ -528,6 +948,7 @@ const ActivitesManagement = () => {
                                                             onClick={() => handleEdit(item)}
                                                         />
                                                     </Tooltip>,
+
                                                     <Tooltip title="Supprimer" key="delete">
                                                         <Popconfirm
                                                             title="Êtes-vous sûr de vouloir supprimer cette activité ?"
@@ -536,6 +957,7 @@ const ActivitesManagement = () => {
                                                             cancelText="Non"
                                                         >
                                                             <Button
+                                                                disabled={!canEdit}
                                                                 type="text"
                                                                 icon={<DeleteOutlined />}
                                                                 danger
@@ -565,8 +987,8 @@ const ActivitesManagement = () => {
                                                     }
                                                     description={
                                                         <div>
-                                                            <Paragraph ellipsis={{ rows: 3, tooltip: item.description_en }} style={{ marginBottom: 8 }}>
-                                                                {item.description_fr}
+                                                            <Paragraph ellipsis={{ rows: 3, tooltip: stripHtmlTags(item.description_en) }} style={{ marginBottom: 8 }}>
+                                                                {stripHtmlTags(item.description_fr)}
                                                             </Paragraph>
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -619,7 +1041,22 @@ const ActivitesManagement = () => {
                     <Modal
                         title={editingActivity ? "Modifier l'Activité" : "Créer une Activité"}
                         open={modalVisible}
-                        onCancel={() => setModalVisible(false)}
+                        onCancel={() => {
+                            // Nettoyer les URLs de prévisualisation avant de fermer
+                            fileList.forEach(file => {
+                                if (file.url && file.url.startsWith('blob:')) {
+                                    URL.revokeObjectURL(file.url)
+                                }
+                            })
+                            galleryList.forEach(file => {
+                                if (file.url && file.url.startsWith('blob:')) {
+                                    URL.revokeObjectURL(file.url)
+                                }
+                            })
+                            setFileList([])
+                            setGalleryList([])
+                            setModalVisible(false)
+                        }}
                         footer={null}
                         width={800}
                         style={{ top: 20 }}
@@ -652,8 +1089,7 @@ const ActivitesManagement = () => {
                                 name="dateActivity"
                                 label="Date de l'activité"
                                 rules={[
-                                    { required: true, message: "Le titre est requis" },
-                                    { min: 3, max: 200, message: "Le titre doit contenir entre 3 et 200 caractères" },
+                                    { required: true, message: "La date de l'activité est requise" },
                                 ]}
                             >
                                 <Input type="date" placeholder="Date de l'activité" />
@@ -713,15 +1149,18 @@ const ActivitesManagement = () => {
                                         {fileList.length > 0 ? "Remplacer l'image" : "Sélectionner une image"}
                                     </Button>
                                 </Upload>
-                                {fileList.length > 0 && (
-                                    <div style={{ marginTop: "8px" }}>
-                                        <img
-                                            src={fileList[0].url || fileList[0].thumbUrl}
-                                            alt="Preview"
-                                            style={{ maxWidth: "200px", maxHeight: "150px", marginTop: "8px" }}
-                                        />
-                                    </div>
-                                )}
+                                {fileList.length > 0 && (() => {
+                                    const previewUrl = fileList[0].url || fileList[0].thumbUrl
+                                    return previewUrl ? (
+                                        <div style={{ marginTop: "8px" }}>
+                                            <img
+                                                src={previewUrl}
+                                                alt="Preview"
+                                                style={{ maxWidth: "200px", maxHeight: "150px", marginTop: "8px", objectFit: "cover" }}
+                                            />
+                                        </div>
+                                    ) : null
+                                })()}
                             </Form.Item>
 
 
@@ -733,15 +1172,18 @@ const ActivitesManagement = () => {
                                 </Upload>
                                 {galleryList.length > 0 && (
                                     <Row gutter={[8, 8]} style={{ marginTop: "8px" }}>
-                                        {galleryList.map((file, index) => (
-                                            <Col key={index}>
-                                                <img
-                                                    src={file.url || file.thumbUrl}
-                                                    alt={`Gallery ${index}`}
-                                                    style={{ width: "100px", height: "100px", objectFit: "cover" }}
-                                                />
-                                            </Col>
-                                        ))}
+                                        {galleryList.map((file, index) => {
+                                            const imageUrl = file.url || file.thumbUrl
+                                            return imageUrl ? (
+                                                <Col key={file.uid || index}>
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt={`Gallery ${index}`}
+                                                        style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "4px" }}
+                                                    />
+                                                </Col>
+                                            ) : null
+                                        })}
                                     </Row>
                                 )}
                             </Form.Item>
