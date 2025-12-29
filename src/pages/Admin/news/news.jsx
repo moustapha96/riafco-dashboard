@@ -671,6 +671,7 @@ const NewsManagement = () => {
                                                                     {stripHtmlTags(item.content_fr)?.substring(0, 10)}
                                                                     {stripHtmlTags(item.content_fr)?.length > 10 && "..."}
                                                                 </Paragraph>
+                                                                
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                                     <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(item.author?.profilePic)} />

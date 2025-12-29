@@ -987,9 +987,10 @@ const ActivitesManagement = () => {
                                                     }
                                                     description={
                                                         <div>
-                                                            <Paragraph ellipsis={{ rows: 3, tooltip: stripHtmlTags(item.description_en) }} style={{ marginBottom: 8 }}>
+                                                            <Paragraph ellipsis={{ rows: 3}} style={{ marginBottom: 8 }}>
                                                                 {stripHtmlTags(item.description_fr)}
                                                             </Paragraph>
+                                                            
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                                     <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(item.author?.profilePic)} />
