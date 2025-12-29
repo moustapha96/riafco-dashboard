@@ -24,11 +24,15 @@ const themeService = {
   // Report theme
   report: (id, data) => axiosInstance.post(`/themes/${id}/report`, data),
 
-  // Create new theme
-  create: (data) => axiosInstance.post("/themes", data),
+  // Create new theme (supports FormData for file upload)
+  create: (formData) => axiosInstance.post("/themes", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
 
-  // Update theme
-  update: (id, data) => axiosInstance.put(`/themes/${id}`, data),
+  // Update theme (supports FormData for file upload)
+  update: (id, formData) => axiosInstance.put(`/themes/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
 
   // Delete theme
   delete: (id) => axiosInstance.delete(`/themes/${id}`),

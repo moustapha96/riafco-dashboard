@@ -23,6 +23,9 @@ import {
     UserOutlined,
     EyeOutlined,
     SendOutlined,
+    FileOutlined,
+    DownloadOutlined,
+    EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import moment from "moment";
@@ -30,6 +33,7 @@ import "moment/locale/fr";
 import themeService from "../../../services/themeService";
 import discussionService from "../../../services/discussionService";
 import CommentComponent from "../commentaire/comment";
+import { buildImageUrl } from "../../../utils/imageUtils";
 
 moment.locale("fr");
 const { Title, Text } = Typography;
@@ -46,6 +50,7 @@ const ThemeView = () => {
     const [commentForm] = Form.useForm();
     const [expandedDiscussionId, setExpandedDiscussionId] = useState(null);
     const [comments, setComments] = useState({});
+    const [showDocument, setShowDocument] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 5,
@@ -175,6 +180,163 @@ const ThemeView = () => {
                         <Tag color={theme.color || "blue"}>{theme.status}</Tag>
                     </Space>
                 </Card>
+
+                {/* Section document du thème */}
+                {theme.file && (
+                    <Card 
+                        style={{ 
+                            marginBottom: "24px",
+                            backgroundColor: "#f8f9fa",
+                            border: "1px solid #e6f7ff"
+                        }}
+                    >
+                        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <FileOutlined style={{ fontSize: "20px", color: "#1890ff" }} />
+                                    <Text strong style={{ fontSize: "16px" }}>
+                                        Document du thème
+                                    </Text>
+                                </div>
+                                <Space>
+                                    <Button
+                                        icon={showDocument ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                                        onClick={() => setShowDocument(!showDocument)}
+                                    >
+                                        {showDocument ? "Masquer" : "Afficher"} le document
+                                    </Button>
+                                    <Button
+                                        icon={<DownloadOutlined />}
+                                        onClick={() => {
+                                            const fileUrl = buildImageUrl(theme.file)
+                                            const link = document.createElement('a')
+                                            link.href = fileUrl
+                                            link.download = theme.file.split('/').pop() || 'document'
+                                            document.body.appendChild(link)
+                                            link.click()
+                                            document.body.removeChild(link)
+                                        }}
+                                    >
+                                        Télécharger
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        icon={<FileOutlined />}
+                                        onClick={() => {
+                                            const fileUrl = buildImageUrl(theme.file)
+                                            window.open(fileUrl, "_blank")
+                                        }}
+                                    >
+                                        Ouvrir dans un nouvel onglet
+                                    </Button>
+                                </Space>
+                            </div>
+                            <Text type="secondary" style={{ fontSize: "14px" }}>
+                                Un document est disponible pour ce thème
+                            </Text>
+                            
+                            {/* Affichage du document */}
+                            {showDocument && (
+                                <div
+                                    style={{
+                                        marginTop: "16px",
+                                        border: "1px solid #d9d9d9",
+                                        borderRadius: "8px",
+                                        overflow: "hidden",
+                                        backgroundColor: "#fff",
+                                    }}
+                                >
+                                    <div style={{ 
+                                        padding: "12px", 
+                                        backgroundColor: "#fafafa", 
+                                        borderBottom: "1px solid #d9d9d9",
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center"
+                                    }}>
+                                        <Text strong style={{ fontSize: "14px" }}>
+                                            Aperçu du document
+                                        </Text>
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            icon={<EyeInvisibleOutlined />}
+                                            onClick={() => setShowDocument(false)}
+                                        >
+                                            Masquer
+                                        </Button>
+                                    </div>
+                                    <div style={{ 
+                                        height: "600px", 
+                                        width: "100%",
+                                        overflow: "auto"
+                                    }}>
+                                        {(() => {
+                                            const fileUrl = buildImageUrl(theme.file)
+                                            const fileExtension = theme.file.split('.').pop()?.toLowerCase()
+                                            
+                                            // Pour les images
+                                            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) {
+                                                return (
+                                                    <img
+                                                        src={fileUrl}
+                                                        alt="Document du thème"
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "auto",
+                                                            objectFit: "contain",
+                                                            display: "block"
+                                                        }}
+                                                    />
+                                                )
+                                            }
+                                            
+                                            // Pour les PDFs
+                                            if (fileExtension === 'pdf') {
+                                                return (
+                                                    <iframe
+                                                        src={fileUrl}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            border: "none"
+                                                        }}
+                                                        title="Document du thème"
+                                                    />
+                                                )
+                                            }
+                                            
+                                            // Pour les autres types de documents (DOC, DOCX, TXT)
+                                            return (
+                                                <div style={{
+                                                    padding: "24px",
+                                                    textAlign: "center",
+                                                    height: "100%",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                    alignItems: "center"
+                                                }}>
+                                                    <FileOutlined style={{ fontSize: "48px", color: "#1890ff", marginBottom: "16px" }} />
+                                                    <Text type="secondary" style={{ fontSize: "16px", marginBottom: "16px" }}>
+                                                        Aperçu non disponible pour ce type de fichier
+                                                    </Text>
+                                                    <Button
+                                                        type="primary"
+                                                        icon={<FileOutlined />}
+                                                        onClick={() => window.open(fileUrl, "_blank")}
+                                                    >
+                                                        Ouvrir le document
+                                                    </Button>
+                                                </div>
+                                            )
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+                        </Space>
+                    </Card>
+                )}
 
                 <Card title="Discussions">
                     <Spin spinning={loading}>

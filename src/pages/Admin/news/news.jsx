@@ -667,12 +667,10 @@ const NewsManagement = () => {
                                                     }
                                                     description={
                                                         <div>
-                                                            <Tooltip title={stripHtmlTags(item.content_fr)}>
-                                                                <Paragraph style={{ marginBottom: 8, cursor: "pointer" }}>
+                                                            <Paragraph style={{ marginBottom: 8, cursor: "pointer" }}>
                                                                     {stripHtmlTags(item.content_fr)?.substring(0, 10)}
                                                                     {stripHtmlTags(item.content_fr)?.length > 10 && "..."}
                                                                 </Paragraph>
-                                                            </Tooltip>
                                                             <Space direction="vertical" size="small" style={{ width: "100%" }}>
                                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                                     <Avatar size="small" icon={<UserOutlined />} src={buildImageUrl(item.author?.profilePic)} />

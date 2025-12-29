@@ -21,6 +21,7 @@ const resourceService = {
 
   // Categories
   getAllCategories: () => axiosInstance.get("/resources/categories/all"),
+  getCategoryById: (id) => axiosInstance.get(`/resources/categories/${id}`),
   createCategory: (data) => axiosInstance.post("/resources/categories", data),
   updateCategory: (id, data) => axiosInstance.put(`/resources/categories/${id}`, data),
   deleteCategory: (id) => axiosInstance.delete(`/resources/categories/${id}`),

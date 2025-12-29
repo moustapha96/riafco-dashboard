@@ -24,11 +24,14 @@ import {
     UserOutlined,
     EyeOutlined,
     EditOutlined,
+    FileOutlined,
+    DownloadOutlined,
 } from "@ant-design/icons"
 import { Link, useNavigate } from "react-router-dom"
 import moment from "moment"
 import "moment/locale/fr"
 import themeService from "../../../services/themeService"
+import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Text } = Typography
 const { Search } = Input
@@ -179,7 +182,7 @@ const ThemeList = () => {
                                                     <div>
                                                         <Text>{theme.description}</Text>
                                                         <div style={{ marginTop: "8px" }}>
-                                                            <Space>
+                                                            <Space wrap>
                                                                 <Text type="secondary">
                                                                     <UserOutlined /> {theme.createdBy?.firstName} {theme.createdBy?.lastName}
                                                                 </Text>
@@ -187,6 +190,16 @@ const ThemeList = () => {
                                                                 <Text type="secondary">
                                                                     <MessageOutlined /> {theme._count?.discussions || 0} discussion(s)
                                                                 </Text>
+                                                                {theme.file && (
+                                                                    <a
+                                                                        href={buildImageUrl(theme.file)}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{ color: "#1890ff" }}
+                                                                    >
+                                                                        <FileOutlined /> Document
+                                                                    </a>
+                                                                )}
                                                             </Space>
                                                         </div>
                                                     </div>

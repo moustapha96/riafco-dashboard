@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, Form, Input, Button, Select, Space, Typography, Alert, Spin, Row, Col, Breadcrumb } from "antd"
-import { SaveOutlined, ArrowLeftOutlined, BookOutlined } from "@ant-design/icons"
+import { Card, Form, Input, Button, Select, Space, Typography, Alert, Spin, Row, Col, Breadcrumb, Upload, Switch } from "antd"
+import { SaveOutlined, ArrowLeftOutlined, BookOutlined, UploadOutlined, FileOutlined, DeleteOutlined } from "@ant-design/icons"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import themeService from "../../../services/themeService"
+import { buildImageUrl } from "../../../utils/imageUtils"
+import { toast } from "sonner"
 
 
 const { Title, Text } = Typography
@@ -17,6 +19,7 @@ const ThemeForm = () => {
     const [submitLoading, setSubmitLoading] = useState(false)
     const [error, setError] = useState(null)
     const [theme, setTheme] = useState(null)
+    const [fileList, setFileList] = useState([])
 
     const navigate = useNavigate()
     const { id } = useParams()
@@ -43,7 +46,20 @@ const ThemeForm = () => {
                 title: response.data.title,
                 description: response.data.description,
                 status: response.data.status,
+                isPublic: response.data.isPublic !== undefined ? response.data.isPublic : true,
             })
+
+            // Si un fichier existe, l'afficher dans la liste
+            if (response.data.file) {
+                setFileList([{
+                    uid: '-1',
+                    name: response.data.file.split('/').pop() || 'document',
+                    status: 'done',
+                    url: buildImageUrl(response.data.file),
+                }])
+            } else {
+                setFileList([])
+            }
         } catch (err) {
             console.error("Erreur lors du chargement du thème:", err)
             setError("Erreur lors du chargement du thème")
@@ -53,21 +69,56 @@ const ThemeForm = () => {
     }
 
     const handleSubmit = async (values) => {
-        console.log(values)
         try {
             setSubmitLoading(true)
             setError(null)
 
+            // Créer FormData pour l'upload de fichier
+            const formData = new FormData()
+            formData.append("title", values.title)
+            formData.append("description", values.description)
+            formData.append("status", values.status)
+            formData.append("isPublic", values.isPublic !== undefined ? values.isPublic.toString() : "true")
+
+            // Gestion du fichier
+            const hasNewFile = fileList.length > 0 && fileList[0].originFileObj
+            const hasExistingFile = isEditing && theme?.file && fileList.length > 0 && !fileList[0].originFileObj
+            const fileRemoved = isEditing && theme?.file && fileList.length === 0
+
+            if (hasNewFile) {
+                // Nouveau fichier à uploader
+                formData.append("file", fileList[0].originFileObj)
+                console.log("Envoi d'un nouveau fichier:", fileList[0].originFileObj.name)
+            } else if (fileRemoved) {
+                // Fichier supprimé - envoyer un indicateur pour que le backend supprime le fichier
+                // Note: Le backend doit gérer le paramètre "removeFile" ou vérifier si file est undefined
+                formData.append("removeFile", "true")
+                console.log("Indication de suppression du fichier")
+            } else if (hasExistingFile) {
+                // Fichier existant conservé - ne rien envoyer, le backend gardera l'ancien
+                console.log("Conservation du fichier existant")
+            }
+
+            // Debug: Afficher le contenu du FormData
+            console.log("FormData contents:")
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ": " + (pair[1] instanceof File ? pair[1].name : pair[1]))
+            }
+
             if (isEditing) {
-                await themeService.update(id, values)
+                await themeService.update(id, formData)
+                toast.success("Thème mis à jour avec succès")
             } else {
-                await themeService.create(values)
+                await themeService.create(formData)
+                toast.success("Thème créé avec succès")
             }
 
             navigate("/themes")
         } catch (err) {
             console.error("Erreur lors de la sauvegarde:", err)
-            setError("Erreur lors de la sauvegarde du thème")
+            const errorMessage = err.response?.data?.message || err.message || "Erreur lors de la sauvegarde du thème"
+            setError(errorMessage)
+            toast.error(errorMessage)
         } finally {
             setSubmitLoading(false)
         }
@@ -154,6 +205,7 @@ const ThemeForm = () => {
                             onFinish={handleSubmit}
                             initialValues={{
                                 status: "ACTIVE",
+                                isPublic: true,
                             }}
                         >
                             <Row gutter={[24, 0]}>
@@ -181,6 +233,37 @@ const ThemeForm = () => {
                                     >
                                         <TextArea rows={4} placeholder="Décrivez le thème de discussion" showCount maxLength={500} />
                                     </Form.Item>
+
+                                    <Form.Item
+                                        label="Document (optionnel)"
+                                        tooltip="Ajoutez un document ou une image lié au thème (max 10 MB)"
+                                    >
+                                        <Upload
+                                            fileList={fileList}
+                                            beforeUpload={() => false}
+                                            onChange={({ fileList: newFileList }) => {
+                                                // Vérifier la taille du fichier (10 MB max)
+                                                const file = newFileList[0]?.originFileObj
+                                                if (file && file.size > 10 * 1024 * 1024) {
+                                                    toast.error("Le fichier ne doit pas dépasser 10 MB")
+                                                    return
+                                                }
+                                                setFileList(newFileList)
+                                            }}
+                                            maxCount={1}
+                                            accept=".jpeg,.jpg,.png,.gif,.webp,.pdf,.doc,.docx,.txt"
+                                            onRemove={() => {
+                                                setFileList([])
+                                            }}
+                                        >
+                                            <Button icon={<UploadOutlined />}>
+                                                {fileList.length > 0 ? "Remplacer le fichier" : "Sélectionner un fichier"}
+                                            </Button>
+                                        </Upload>
+                                        <div style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}>
+                                            Formats acceptés: Images (JPEG, JPG, PNG, GIF, WEBP) ou Documents (PDF, DOC, DOCX, TXT) - Max 10 MB
+                                        </div>
+                                    </Form.Item>
                                   
                                 </Col>
 
@@ -197,6 +280,15 @@ const ThemeForm = () => {
                                         </Select>
                                     </Form.Item>
 
+                                    <Form.Item
+                                        label="Thème public"
+                                        name="isPublic"
+                                        valuePropName="checked"
+                                        tooltip="Un thème public est visible par tous les utilisateurs"
+                                    >
+                                        <Switch checkedChildren="Public" unCheckedChildren="Privé" />
+                                    </Form.Item>
+
                                     {isEditing && theme && (
                                         <Card size="small" style={{ backgroundColor: "#f9f9f9" }}>
                                             <Title level={5}>Informations</Title>
@@ -210,6 +302,21 @@ const ThemeForm = () => {
                                                 <Text type="secondary">
                                                     <strong>Discussions:</strong> {theme._count?.discussions || 0}
                                                 </Text>
+                                                {theme.file && (
+                                                    <div>
+                                                        <Text type="secondary">
+                                                            <strong>Document:</strong>{" "}
+                                                            <a
+                                                                href={buildImageUrl(theme.file)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                style={{ color: "#1890ff" }}
+                                                            >
+                                                                <FileOutlined /> Voir le document
+                                                            </a>
+                                                        </Text>
+                                                    </div>
+                                                )}
                                             </Space>
                                         </Card>
                                     )}

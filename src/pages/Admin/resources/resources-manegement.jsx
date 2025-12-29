@@ -48,8 +48,17 @@ const { TabPane } = Tabs;
 
 const ResourcesManagement = () => {
   const { user, isAuthenticated } = useAuth();
+  // Seuls ADMIN et SUPER_ADMIN peuvent supprimer des ressources et catégories
   const canDelete = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const navigate = useNavigate();
+
+  // Debug: vérifier les permissions (à retirer en production)
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log("User role:", user.role);
+      console.log("Can delete:", canDelete);
+    }
+  }, [user, isAuthenticated, canDelete]);
 
   // States for resources
   const [resources, setResources] = useState([]);
@@ -108,11 +117,14 @@ const ResourcesManagement = () => {
   const fetchCategories = async () => {
     try {
       const response = await resourceService.getAllCategories();
-      if (response.data) {
-        setCategories(response.data);
+      if (response.data || response.success) {
+        // L'API retourne les catégories avec le nombre de ressources
+        const categoriesData = response.data || response;
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
+      toast.error("Erreur lors du chargement des catégories");
     }
   };
 
@@ -158,8 +170,12 @@ const ResourcesManagement = () => {
     }
   };
 
-  // Delete resource
+  // Delete resource - Seuls ADMIN et SUPER_ADMIN peuvent supprimer
   const handleDeleteResource = async (id) => {
+    if (!canDelete) {
+      toast.error("Vous n'avez pas les permissions pour supprimer des ressources");
+      return;
+    }
     try {
       const response = await resourceService.delete(id);
       if (response.success) {
@@ -223,38 +239,53 @@ const ResourcesManagement = () => {
   };
 
   const handleCategorySubmit = async (values) => {
+    setLoading(true);
     try {
       const response = editingCategory
         ? await resourceService.updateCategory(editingCategory.id, values)
         : await resourceService.createCategory(values);
 
-      if (response.success) {
+      if (response.success || response.data) {
         toast.success(editingCategory ? "Catégorie mise à jour" : "Catégorie créée");
         setCategoryModalVisible(false);
         setEditingCategory(null);
         categoryForm.resetFields();
-        fetchCategories();
+        await fetchCategories();
+        // Rafraîchir aussi les ressources si on est sur l'onglet ressources
+        fetchResources(pagination.current, pagination.pageSize, searchTerm, selectedCategory);
       } else {
-        toast.error(response || "Erreur lors de la sauvegarde");
+        toast.error(response.message || response || "Erreur lors de la sauvegarde");
       }
     } catch (error) {
       console.error("Error saving category:", error);
-      toast.error("Erreur de connexion");
+      toast.error(error.response?.data?.message || error.message || "Erreur de connexion");
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Delete category - Seuls ADMIN et SUPER_ADMIN peuvent supprimer
   const handleDeleteCategory = async (id) => {
+    if (!canDelete) {
+      toast.error("Vous n'avez pas les permissions pour supprimer des catégories");
+      return;
+    }
+    setLoading(true);
     try {
       const response = await resourceService.deleteCategory(id);
-      if (response.success) {
+      if (response.success || response.data) {
         toast.success("Catégorie supprimée");
-        fetchCategories();
+        await fetchCategories();
+        // Rafraîchir aussi les ressources si on est sur l'onglet ressources
+        fetchResources(pagination.current, pagination.pageSize, searchTerm, selectedCategory);
       } else {
-        toast.error(response || "Erreur lors de la suppression");
+        toast.error(response.message || response || "Erreur lors de la suppression");
       }
     } catch (error) {
       console.error("Error deleting category:", error);
-      toast.error("Erreur de connexion");
+      toast.error(error.response?.data?.message || error.message || "Erreur de connexion");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -423,45 +454,49 @@ const ResourcesManagement = () => {
               )}
             </Space>
 
-            {isAuthenticated && (user?.role === "ADMIN" || user?.role === "MODERATOR") && (
+            {isAuthenticated && (
               <Space>
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    setEditingResource(record);
-                    form.setFieldsValue({
-                      title: record.title,
-                      description: record.description,
-                      categoryId: record.categoryId,
-                      tags: Array.isArray(record.tags) ? record.tags : [],
-                      lien: record.lien,
-                      isPublic: record.isPublic,
-                    });
-                    // Réinitialiser les listes de fichiers
-                    setFileList([]);
-                    setCouvertureList([]);
-                    // Si une couverture existe, l'afficher
-                    if (record.couverture) {
-                      setCouvertureList([{
-                        uid: '-1',
-                        name: 'couverture',
-                        status: 'done',
-                        url: buildImageUrl(record.couverture),
-                      }]);
-                    }
-                    setModalVisible(true);
-                  }}
-                >
-                  Modifier
-                </Button>
+                {(user?.role === "ADMIN" || user?.role === "MODERATOR") && (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setEditingResource(record);
+                      form.setFieldsValue({
+                        title: record.title,
+                        description: record.description,
+                        categoryId: record.categoryId,
+                        tags: Array.isArray(record.tags) ? record.tags : [],
+                        lien: record.lien,
+                        isPublic: record.isPublic,
+                      });
+                      // Réinitialiser les listes de fichiers
+                      setFileList([]);
+                      setCouvertureList([]);
+                      // Si une couverture existe, l'afficher
+                      if (record.couverture) {
+                        setCouvertureList([{
+                          uid: '-1',
+                          name: 'couverture',
+                          status: 'done',
+                          url: buildImageUrl(record.couverture),
+                        }]);
+                      }
+                      setModalVisible(true);
+                    }}
+                  >
+                    Modifier
+                  </Button>
+                )}
                 {canDelete && (
                   <Popconfirm
                     title="Êtes-vous sûr de vouloir supprimer cette ressource ?"
+                    description="Cette action est irréversible."
                     onConfirm={() => handleDeleteResource(record.id)}
-                    okText="Oui"
-                    cancelText="Non"
+                    okText="Oui, supprimer"
+                    cancelText="Annuler"
+                    okButtonProps={{ danger: true }}
                   >
                     <Button type="link" size="small" danger icon={<DeleteOutlined />}>
                       Supprimer
@@ -485,7 +520,7 @@ const ResourcesManagement = () => {
       render: (text) => (
         <Space>
           <FolderOutlined />
-          <span>{text}</span>
+          <span style={{ fontWeight: 500 }}>{text}</span>
         </Space>
       ),
     },
@@ -493,10 +528,22 @@ const ResourcesManagement = () => {
       title: "Description",
       dataIndex: "description",
       key: "description",
+      render: (text) => text || <span style={{ color: "#999" }}>-</span>,
+    },
+    {
+      title: "Nombre de ressources",
+      dataIndex: "resourceCount",
+      key: "resourceCount",
+      render: (count) => (
+        <Tag color="blue" style={{ fontSize: "14px", padding: "4px 12px" }}>
+          {count || 0} ressource{count !== 1 ? "s" : ""}
+        </Tag>
+      ),
     },
     {
       title: "Actions",
       key: "actions",
+      width: 200,
       render: (_, record) =>
         isAuthenticated && canDelete ? (
           <Space>
@@ -516,6 +563,7 @@ const ResourcesManagement = () => {
             </Button>
             <Popconfirm
               title="Êtes-vous sûr de vouloir supprimer cette catégorie ?"
+              description={record.resourceCount > 0 ? `Cette catégorie contient ${record.resourceCount} ressource(s). Les ressources ne seront pas supprimées mais perdront leur catégorie.` : ""}
               onConfirm={() => handleDeleteCategory(record.id)}
               okText="Oui"
               cancelText="Non"
@@ -525,7 +573,9 @@ const ResourcesManagement = () => {
               </Button>
             </Popconfirm>
           </Space>
-        ) : null,
+        ) : (
+          <span style={{ color: "#999" }}>-</span>
+        ),
     },
   ];
 
@@ -638,31 +688,42 @@ const ResourcesManagement = () => {
                   />
                 </TabPane>
 
-                {isAuthenticated && user?.role === "ADMIN" && (
-                  <TabPane tab="Catégories" key="categories">
-                    <Row justify="end" style={{ marginBottom: "16px" }}>
-                      <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => {
-                          setEditingCategory(null);
-                          categoryForm.resetFields();
-                          setCategoryModalVisible(true);
-                        }}
-                      >
-                        Nouvelle Catégorie
-                      </Button>
-                    </Row>
+                <TabPane tab="Catégories" key="categories">
+                  <Row justify="space-between" align="middle" style={{ marginBottom: "16px" }}>
+                    <Col>
+                      <h3 style={{ margin: 0 }}>Gestion des Catégories</h3>
+                    </Col>
+                    <Col>
+                      {isAuthenticated && canDelete && (
+                        <Button
+                          type="primary"
+                          icon={<PlusOutlined />}
+                          onClick={() => {
+                            setEditingCategory(null);
+                            categoryForm.resetFields();
+                            setCategoryModalVisible(true);
+                          }}
+                        >
+                          Nouvelle Catégorie
+                        </Button>
+                      )}
+                    </Col>
+                  </Row>
 
-                    <Table
-                      columns={categoryColumns}
-                      dataSource={categories}
-                      scroll={{ x: "max-content" }}
-                      rowKey="id"
-                      pagination={false}
-                    />
-                  </TabPane>
-                )}
+                  <Table
+                    columns={categoryColumns}
+                    dataSource={categories}
+                    scroll={{ x: "max-content" }}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `${total} catégorie${total !== 1 ? "s" : ""}`,
+                      pageSizeOptions: ['10', '20', '50'],
+                    }}
+                  />
+                </TabPane>
               </Tabs>
             </Card>
 
@@ -812,6 +873,7 @@ const ResourcesManagement = () => {
                 categoryForm.resetFields();
               }}
               footer={null}
+              width={600}
             >
               <Form form={categoryForm} layout="vertical" onFinish={handleCategorySubmit}>
                 <Form.Item
@@ -830,12 +892,18 @@ const ResourcesManagement = () => {
                   label="Description"
                   rules={[{ max: 500, message: "La description ne peut pas dépasser 500 caractères" }]}
                 >
-                  <TextArea rows={3} placeholder="Description de la catégorie" />
+                  <TextArea rows={3} placeholder="Description de la catégorie (optionnel)" />
                 </Form.Item>
 
                 <Form.Item>
                   <Space>
-                    <Button type="primary" htmlType="submit">
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading}
+                      disabled={loading}
+                      icon={loading ? <LoadingOutlined /> : <SaveFilled />}
+                    >
                       {editingCategory ? "Mettre à jour" : "Créer"}
                     </Button>
                     <Button
@@ -844,6 +912,7 @@ const ResourcesManagement = () => {
                         setEditingCategory(null);
                         categoryForm.resetFields();
                       }}
+                      disabled={loading}
                     >
                       Annuler
                     </Button>

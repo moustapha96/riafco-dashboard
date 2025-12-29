@@ -49,15 +49,8 @@ const UserListAdmin = () => {
             };
             console.log(params);
             const response = await userService.getAll(params);
-            // renvoie tout ce qu'il y a dans la table user sauf le super admin si c'est pas le SUPER_ADMIN dans currentUser
-
-            // setUsers(response.users.filter(user => user.role !== "SUPER_ADMN"));
-
-            setUsers(
-                currentUser?.role === "SUPER_ADMIN"
-                    ? response.users 
-                    : response.users.filter(user => user.role !== "SUPER_ADMIN") 
-            );
+            // Toujours exclure les SUPER_ADMIN de l'affichage
+            setUsers(response.users.filter(user => user.role !== "SUPER_ADMIN"));
 
             setPagination(prev => ({
                 ...prev,

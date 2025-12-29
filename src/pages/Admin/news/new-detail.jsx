@@ -10,6 +10,15 @@ import { buildImageUrl } from "../../../utils/imageUtils"
 
 const { Title, Paragraph, Text } = Typography
 
+// Fonction pour supprimer les balises HTML et retourner uniquement le texte
+const stripHtmlTags = (html) => {
+    if (!html) return ""
+    // Créer un élément DOM temporaire pour extraire le texte
+    const tmp = document.createElement("div")
+    tmp.innerHTML = html
+    return tmp.textContent || tmp.innerText || ""
+}
+
 const NewsDetails = () => {
     const { id } = useParams()
     console.log(id)
@@ -185,16 +194,22 @@ const NewsDetails = () => {
 
                             {/* Contenu principal */}
                             <Card>
-                                <div style={{ fontSize: "16px", lineHeight: "1.8" }}>
-                                    <Paragraph style={{ whiteSpace: "pre-wrap", fontSize: "16px" }}>
-                                        {news.content_fr}
-                                    </Paragraph>
-                                </div>
-                                <div style={{ fontSize: "16px", lineHeight: "1.8" }}>
-                                    <Paragraph style={{ whiteSpace: "pre-wrap", fontSize: "16px" }}>
-                                        {news.content_en}
-                                    </Paragraph>
-                                </div>
+                                {news.content_fr && (
+                                    <div style={{ fontSize: "16px", lineHeight: "1.8", marginBottom: "24px" }}>
+                                        <Title level={4} style={{ marginBottom: "12px" }}>Contenu (Français)</Title>
+                                        <Paragraph style={{ whiteSpace: "pre-wrap", fontSize: "16px" }}>
+                                            {stripHtmlTags(news.content_fr)}
+                                        </Paragraph>
+                                    </div>
+                                )}
+                                {news.content_en && (
+                                    <div style={{ fontSize: "16px", lineHeight: "1.8" }}>
+                                        <Title level={4} style={{ marginBottom: "12px" }}>Contenu (Anglais)</Title>
+                                        <Paragraph style={{ whiteSpace: "pre-wrap", fontSize: "16px" }}>
+                                            {stripHtmlTags(news.content_en)}
+                                        </Paragraph>
+                                    </div>
+                                )}
                             </Card>
 
                             {news.galleries && news.galleries.length > 0 && (

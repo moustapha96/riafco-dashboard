@@ -19,7 +19,16 @@ import { toast } from "sonner"
 import { buildImageUrl } from "../../../utils/imageUtils"
 
 
-const { Title, Text } = Typography
+const { Title, Text, Paragraph } = Typography
+
+// Fonction pour supprimer les balises HTML et retourner uniquement le texte
+const stripHtmlTags = (html) => {
+    if (!html) return ""
+    // Créer un élément DOM temporaire pour extraire le texte
+    const tmp = document.createElement("div")
+    tmp.innerHTML = html
+    return tmp.textContent || tmp.innerText || ""
+}
 
 const ActivitesDetails = () => {
     const { id } = useParams()
@@ -166,16 +175,20 @@ const ActivitesDetails = () => {
                                 </Card>
                             )}
 
-                            <Card title="Description(Fr)" style={{ marginBottom: "24px" }}>
-                                <div data-color-mode="light">
-                                    <MDEditor.Markdown source={activity.description_fr} />
-                                </div>
-                            </Card>
-                            <Card title="Description(En)" style={{ marginBottom: "24px" }}>
-                                <div data-color-mode="light">
-                                    <MDEditor.Markdown source={activity.description_en} />
-                                </div>
-                            </Card>
+                            {activity.description_fr && (
+                                <Card title="Description (Français)" style={{ marginBottom: "24px" }}>
+                                    <Paragraph style={{ whiteSpace: "pre-wrap", fontSize: "16px", lineHeight: "1.8" }}>
+                                        {stripHtmlTags(activity.description_fr)}
+                                    </Paragraph>
+                                </Card>
+                            )}
+                            {activity.description_en && (
+                                <Card title="Description (Anglais)" style={{ marginBottom: "24px" }}>
+                                    <Paragraph style={{ whiteSpace: "pre-wrap", fontSize: "16px", lineHeight: "1.8" }}>
+                                        {stripHtmlTags(activity.description_en)}
+                                    </Paragraph>
+                                </Card>
+                            )}
 
                             {activity.galleries && activity.galleries.length > 0 && (
                                 <div style={{ marginTop: 8 }}>
